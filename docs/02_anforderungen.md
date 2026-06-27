@@ -60,7 +60,7 @@ Diese Anforderungen gelten für pifos als Ganzes, unabhängig vom einzelnen Baus
 | ÜBR-01 | MUSS | pifos stellt die drei Bausteine Aktionen, Module und Konfiguration bereit. |
 | ÜBR-02 | MUSS | pifos ist von beliebigen Aufrufern nutzbar, nicht nur vom Installer. |
 | ÜBR-03 | MUSS | pifos erfüllt jede Anforderung mit der einfachsten dafür ausreichenden Lösung (KISS). |
-| ÜBR-04 | MUSS | Jede Klassenvariable verfügt über eine Lesemethode (getter) und eine Schreibmethode (setter). |
+| ÜBR-04 | MUSS | Öffentliche Attribute (ohne führenden Unterstrich) sind direkt zugänglich; Zugriffslogik über `@property` wird nur dort eingesetzt, wo der Zugriff eine Prüfung oder Berechnung erfordert. Flächendeckende getter-/setter-Methoden entfallen. |
 | ÜBR-05 | MUSS | pifos enthält nur Funktionen, die das Konzept fordert; keine darüber hinausgehenden Festlegungen oder Funktionen. |
 
 ## 4. Aktionen
@@ -361,5 +361,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.02 | 2026-06-26 | macodix | Klärungen eingearbeitet: CAL-02 um Fortsetzen ergänzt; neu STR-05 (Abschluss über Returncode), STR-06 (sequenziell/parallel), CAL-07 (Reaktion auf Modulausgang), MOD-14 (Idempotenz modulabhängig). |
 | 0.03 | 2026-06-27 | macodix | Kapitel 13 Sicherheit ergänzt (SIC-01 bis SIC-26, 23 MUSS / 3 KANN), Bereichskürzel SIC: Eingabevalidierung an der Verwendungsstelle, Systembefehl-Aktion, IPC/Serialisierung, Rechtekontext, safe-mode, Konfig-Laden, Protokollierung, Fehlerzustand, mitgelieferte Bibliotheken. |
 | 0.04 | 2026-06-27 | macodix | Konsistenz: Inhaltsverzeichnis ohne Listen-Markup; Konfigurator-Pflichtanforderungen als bedingt gekennzeichnet (nur falls Konfigurator vorhanden); Implementierungsdetail (multiprocessing/pickle) aus Kapitel 13.3 entfernt. |
+| 0.05 | 2026-06-27 | macodix | ÜBR-04 neu gefasst (Entscheidung Martin): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, keine flächendeckenden getter/setter. |
 </content>
 </invoke>
