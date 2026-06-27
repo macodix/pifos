@@ -1,39 +1,21 @@
-# Umstellung auf Python — Konzept
+# *p*ython *i*nfrastructure *f*or *o*perational *s*ervice - pifos
 
 **Status:** [in Bearbeitung] · **Stand:** 2026-06-25
 
-Dieses Dokument hält die Ziele und die getroffenen Festlegungen für die Umstellung des Installers von Bash auf Python fest. Es ist ein Arbeitsstand; offene Punkte werden gesondert geklärt.
+# 1. Was ist *pifos*?
 
-## 1. Ziele
+Mit *pifos* soll ein Ökosystem an Python Modulen für Linux Systeme entstehen, dass eine gute und transparente (z. B. Logging) Steuerung und Kontrolle von Aktivitäten auf einem System ermöglichen soll. Der Mehrwert geegnüber regulären Srcipten in Bash oder Pyhton leiegt darin, dass
 
-Den Installer von Bash auf Python umstellen. Der Installer wird dabei nativ neu aufgebaut, ohne Wrapper um die bestehenden Skripte.
+- die auf dem System ausgeführten Aktivitäten / Prozesse überwacht und protoklliert werden
+- eine gemeinsame Logumgebung, die unabhängig von der Systemlogs geschaffen werden kann (wichtig auch für Nicht root-Nutzer)
+- mit definierten Aktioneen typische Tätgikeiten (wie z. B. Datei kopieren) standardisiert überwacht werden
+- Überwachung, Erfolgüberprüfung , Logging durch standardisierte Aktioen und Module nicht immer neu geschrieben werdn müssen#
+- vorhandene Module für komplexere AKtivitäten (z. B. Systemkonfigurationen) per Konfiguratin gesteuert werden können  
 
-Gründe für die Umstellung sind:
-
-- eine bessere Bedienoberfläche,
-- die Kontrolle und Überwachung der Ein- und Ausgaben aufgerufener Befehle,
-- ein generischer Aufbau, der sich über die Server-Härtung hinaus für weitere Aufgaben wiederverwenden lässt,
-- die Steuerung über Konfigurationsdateien, die als Datei oder über einen Dialog erstellt werden.
-
-# 2. Für KI: Allgemeine Festlegungen für die weitere Planung und Entwicklung 
-
-Setze exakt das um was gefordert ist! Erfinde keine Features, keine Festlegungen.
-
-Grundsatz für die Planung und Entwicklung: KISS 'Keep It Simple & Stupid'. Also immer die einfachste Lösung wählen um eine Anforderung zu erfüllen
-
-Einschränkende Festlegungen werden nur getroffen wenn es dafür eine guten Grund gibt und nur wenn sie von mir genehmigt sind!
-
-Alle Klassenvariablen sollten über getter und setter verfügen.
+*pifos* kann daher allgemein nutzbare Komponente auf dem jeweiligen System implementieren werde. Und daher bekommt es auch einen eigenen Namen: 'pifos' - '*p*ython *i*nfrastructure *f*or *o*perational *s*ervices'  
 
 
-
-# 3. Projekt/Teilprojekt 'pifos'
-
-Allerdings hat sich das Projekt weiterentwickelt. Neben der Entwicklung eines neuen Installers soll ein Ökosystem an Python Modulen entstehen, dass eine gute und transparente (z. B. Logging) Steuerung und Kontrolle von Aktivitäten auf einem System ermöglichen soll. Der Installer baut auf diesem Ökosystem auf. Gleichzeitig kann dieses Python-Modul-System auch von anderen Aufrufern genutzt werden. 
-
-Es ist daher sinnvoll im Verlauf dieses Projektes dieses Ökosystem nicht nur im Rahmen des Installers zur Verfügung zu stellen, sondern als allgemein nutzbare Komponente auf dem jeweiligen System zu implementieren. Daher bekommt es auch einen eigenen Namen: 'pifos' - '*p*ython *i*nfrastructure *f*or *o*perational *s*ervices'  
-
-## 3.1. Aufbau / Design 'pifos'
+# 2. Aufbau & Design 
 
 Die grundlegenden Bausteine für 'pifos'
 
@@ -41,8 +23,23 @@ Die grundlegenden Bausteine für 'pifos'
 - Konfiguration (optional mit Konfigurator)
 - Module
 
+# 2.1. Designprinzipien
 
-### 3.1.1. Aktionen
+Die Entwicklung erfolgt in Python in der Version 3.13., da diese Version in den meisetn aktuellen Linux-Distribution mindestens vorhanden ist.
+
+Dabei soll sich die Entwicklung grundsätzlich an dem KISS ('Keep it simple and stupid) Prinzip orientieren und einfahce Dinge nicht komplizierter machen als nötig.  
+
+Als weitere Orientierung für die Entwicklung werden die altbekannten UNIX Grundsätze genutzt, sinngemäß
+
+- *Do one thing and do it well* - ein Programm für eine Aufgabe (s. a. 2.2 Aktionen)
+- *Build modular programs* - kleine, modulare Programme (s. a. 2.2 AKtionen udn 2.3 Module 
+- *Choose portability over efficiency* - Entwicklung in Python, unübliche Libraries (rich, questionary) werden mitgeliefert
+- *Write transparent prorams* - vollständiges Logging der Aktivitäten
+- *Write robust programs* - vollständige Steuerung der Modul-Prozesse
+ 
+
+
+## 2.2. Aktionen
 
 Eine Aktion ist eine Python Klasse die genau eine Aufgabe in der Systemumgebung erledigt. Sie ist atomar und erfüllt genau eine Aufgabe. Beispiele sind Aktionen wie Datei kopieren, in Textdatei suchen und ersetzen, Datei erstellen oder einen Systembefehl auszuführen.
 
@@ -58,14 +55,14 @@ In der Praxis muss von Fall zu Fall entschieden werden ob es insbesondere bei Sy
 
 Eine weitere Abgrenzung ist zu treffen bei Aktionen die sowohl auf Systemebene als auch in Python existieren (z. B. cp, mkdir etc.). Hier ist der entscheidende Maßstab welches Werkzeug (Python oder System) die bessere Kontrolle über die Aufgabe bietet.
 
-#### 3.1.1.1. Spezifische Festlegungen zu Aktionen 
+### 2.2.1. Spezifische Festlegungen zu Aktionen 
 
 Für Aktion die Dateien ändern, überschreiben oder löschen, soll eine 'safe-mode' aktivierbar sein, bei dem die Datei vor der Änderung gesichert wird. Dabei bleibt der Ort der Sicherung (z. B. gleiches Verzeichnis, anderes Verzeichnis) als Variable/Parameter einstellbar.
 
 Es muss eine Klasse für System-Befehle geben, die für alle Befehle genutzt werden kann, bei denen eine eigenen Aktion keine Sinn macht.
 
 
-### 3.1.2. Module 
+## 2.3. Module 
 
 Ein Modul ist eine Python Klasse zur Erledigung einer Aufgabe. Zur Erfüllung diese Aufgabe nutzt eine Modul die Aktions-Klassen, kann aber auch zusätzliche Methoden/Aktivitäten die zur Erfüllung der Aufgabe dienen enthalten. Die Parameter, die ggf. für die Erfüllung der Aufgabe erforderlich sind (z. B. Werte zur Änderung einer Konfigurationsdatei) erhält ein Modul als Config Objekt (s. Kap 2.3 Konfiguration).
 
@@ -87,7 +84,7 @@ Module die Veränderungen am System bewirken (z. B. Installationsmodule) sollen
 Die Modul-Klassen sollten die erforderlich Konfiguration deklarativ nachvollziehbar enthalten, damit sichtbar ist welche Konfiguration übergeben werden muss. Die Deklaration erfolgt als Klassenattribut `CONFIG`, eine Liste von `ConfigItem` (dataclass in `config.py`). Jedes `ConfigItem` trägt `name`, `required`, `default`, `check` und `description`. Beim Start prüft das Modul die eingehenden Werte gegen diese Liste und legt sie in seinen Klassenvariablen ab. Bei der Deklaration muss zwischen Pflicht- und Kann-Werten unterschieden werden. Grundsätzlich sollten Module - wann immer möglich - sinnfällig Vorgabewerte enthalten.
 
 
-### 3.1.3. Konfiguration
+## 2.4. Konfiguration
 
 Die Schnittstelle zwischen Anwender und dem hier geschaffenen Ökosystem bilden die Konfigurationen. In der Praxis können Konfigurationen sehr unterschiedliche Formen haben. Als Datei in verschiedenen Formaten, wie 'ini', 'extended', toml', 'json' oder sogar als Parameterliste. Um hier kein unnötige Festlegung zu schaffen, wird ein Config-Objekt eingeführt.
 
@@ -98,7 +95,7 @@ Die spezifischen Config-Klassen können sich bei Bedarf an den Aktionsklassen be
 Die Config Klasse stellt Methoden zur Verfügung um den Aufrufer mit der gewünschten Konfiguration zu versorgen. Dies können einzelne Werte sein, Sektionen (als dict oder list), sortierte oder unsortierte Listen usw. Für die Definition der jeweiligen Einträge wird ein Klasse `ConfigItem` in der `config.py` zur Verfügung gestellt.
 Eine inhaltliche Prüfung der Konfigurationsdaten findet nicht statt. Allerdings können grundlegende Prüfmuster bei Bedarf in die config-Klasse aufgenommen werden (z. B. 'ist leer', 'Wert existiert', 'ist syntaktisch gültige Mailadresse', ist Zahl, ist kommasepariert, ist Liste usw.)
 
-#### 3.1.3.1. Konfigurator
+### 2.4.1. Konfigurator
 
 Optional kann ein UI-Konfigurator erstellt werden, mit dessen Hilfe für ein oder mehrere Module Konfiguration erstellt werden können. Der Konfigurator soll die Deklarationen in den Modulen nutzen um die erforderlichen Konfigurationsitems- und werte zu bestimmen und über die Möglichkeit verfügen dies in unterschiedlichen Formaten abzulegen. Der Konfigurator nutzt zur UI Gestaltung rich und questionary.
 
@@ -113,9 +110,9 @@ Mit weiteren Parametern kann festgelegt werden
 Sind die Parameter nicht gesetzt müssen sie per Dialog abgefragt werden. 
 
 
-## 3.2. Aufruf, Steuerung, Konfiguration, Logfile und Ausnahmen
+# 3. Aufruf, Steuerung, Konfiguration, Logfile und Ausnahmen
 
-### 3.2.1. Aufruf und Steuerung
+## 3.1. Aufruf und Steuerung
 
 Die Aufrufer (beispielsweise der Installer) startet ein Modul über IPC. Dabei wird ein Config-Objekt übergeben. Der Start
 
@@ -125,7 +122,7 @@ Es muss grundsätzlich  möglich sein, dass ein Modul auch nicht Logging relevan
 
 Modul-Prozesse lieferen bnei regulärem Abschluß den Returncode 0. Die Returncodes bei Fehlern oder Abbrüchen sind ungleich 0 und werden vom Modul festgelegt (keine Vorgaben).
 
-### 3.2.2. Konfigurationsdaten und Parameter
+## 3.2. Konfigurationsdaten und Parameter
 
 Der Aufrufer (z. B. der Installer) ist für die Beschaffung der Konfigurationsdaten, sofern erforderlich, zuständig. Dies geschieht durch die Instanziierung eines entsprechenden Konfig-Objekts. 
 
@@ -133,19 +130,19 @@ Die Konfig wird dann entsprechend den Anforderungen des Moduls beim Start des Mo
 
 Die Aktionen sind Bestandteil der Module (Komposition) und werden i. d. R von den Modulen über Parameter oder Manipulation von Klassenvariablen gesteuert.
 
-### 3.2.3. Logging
+## 3.3. Logging
 
 Das Logging wird durch den Aufrufer vorgenommen. Module und Aktionen erhalten keine eigene Logger Umgebung. Die Module entscheiden welche Meldungen an den Aufrufer per IPC-Kommunikation weitergereicht werden. Der Aufrufer entscheidet was er davon in das Logfile aufnehmen möchte.
 
 Grundsätzlich soll beim Logging zwischen 4 Stufen unterschieden werden: INFO, WARN, ERROR, CRITICAL. Die Module sollten die Meldung entsprechend gleich qualifizieren. Das Loglevel des Aufrufers soll einstellbar sein. Das Loglevel soll auch an die Module weitergegeben werden.
 
 
-### 3.2.4 Ausnahmen / Exceptions
+## 3.4. Ausnahmen / Exceptions
 
 Aktionen und Module sollen im Fehlerfall Ausnahmen (Exceptions) erzeugen. Die Exceptions sind entsprechend des eingestellten Loglevels durch die Module an den Aufrufer weiterzuleiten. In den seltenen Fällen in denen ein Modul einen Fehler als CRITICAL einstuft und sich beendet, muss vorher sichergestellt sein dass die Exception Meldungen noch an den Aufrufer weitergeleitet werden. 
 
 
-## 3.3 Standardaufrufer
+# 4. Standardaufrufer *PifosCaller*
 
 Der Aufrufer braucht viel gemeinsame Infrastruktur (Logger, IPC usw.). Diese liegt in einer Basisklasse `PifosCaller` in der Datei `pifos_caller.py`, von der die konkreten Aufrufer wie der Installer erben.
 
@@ -158,11 +155,6 @@ Die Basisklasse enthält insbesonder Methoden um
 Der konkrete Aufrufer enthält somit nur seine Fachlogik und ggf. und UI.   
 
 Die Basisklasse `PifosCaller` enthält überschreibbare Leer- oder Standardmethoden für Behandlung von der unterschieldichen Beendigungszustände der Module (mind. für Retunrcode 0 und ungleich 0).
-
-
-# 4. LSB Installer
-
-Siehe Dokument linux-secure-base/docs/installer
 
 
 # 5. Bereitstellung und Bedienung
