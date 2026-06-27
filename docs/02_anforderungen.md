@@ -109,9 +109,9 @@ Die folgenden Anforderungen betreffen jedes Modul.
 | MOD-01 | MUSS | Ein Modul erledigt seine Aufgabe unter Nutzung von Aktionen und kann zusätzliche eigene Methoden enthalten. |
 | MOD-02 | MUSS | Ein Modul erhält die für die Aufgabe erforderlichen Parameter als Config-Objekt. |
 | MOD-03 | MUSS | Module ohne erforderliche Konfiguration sind möglich; bei ihnen entfällt die Übergabe eines Config-Objekts. |
-| MOD-04 | MUSS | Ein Modul legt die Konfigurationsdaten aus dem Config-Objekt in seinen Klassenvariablen ab. |
+| MOD-04 | MUSS | Ein Modul legt die Konfigurationsdaten aus dem Config-Objekt in seinen Instanzvariablen ab. |
 | MOD-05 | MUSS | Alle Module erben von einer gemeinsamen Elternklasse die gemeinsamen Methoden und Variablen zu Systemumgebung, Aufruf von Aktionen, Steuerung von Aktionen und Interaktion mit dem aufrufenden Prozess. |
-| MOD-06 | MUSS | Module steuern ihre Aktionen über Parameter oder über das Setzen von Klassenvariablen. |
+| MOD-06 | MUSS | Module steuern ihre Aktionen über Parameter oder über das Setzen von Instanzvariablen. |
 | MOD-07 | MUSS | Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist (z. B. Installationsmodul am Namen erkennbar). |
 
 ### 5.2 Konfigurationsdeklaration
@@ -121,7 +121,7 @@ Ein Modul macht nachvollziehbar sichtbar, welche Konfiguration es benötigt.
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
 | MOD-08 | MUSS | Ein Modul deklariert die benötigte Konfiguration als Klassenattribut, das je Eintrag Name, Verbindlichkeit (Pflicht/Kann), Vorgabewert, Prüfung und Beschreibung trägt. |
-| MOD-09 | MUSS | Ein Modul prüft die eingehenden Konfigurationswerte beim Start anhand seiner Deklaration und legt sie danach in seinen Klassenvariablen ab. |
+| MOD-09 | MUSS | Ein Modul prüft die eingehenden Konfigurationswerte beim Start anhand seiner Deklaration und legt sie danach in seinen Instanzvariablen ab. |
 | MOD-10 | MUSS | Die Deklaration unterscheidet zwischen Pflicht- und Kann-Werten. |
 | MOD-11 | KANN | Ein Modul enthält sinnfällige Vorgabewerte, wann immer möglich. |
 
@@ -270,7 +270,7 @@ Das Config-Objekt prüft Inhalte bewusst nicht (KFG-08). Werte, die sicherheitsk
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
-| SIC-01 | MUSS | Werte aus Konfiguration oder anderen externen Quellen, die als Argument eines Systembefehls oder als Dateipfad verwendet werden, werden vor dieser Verwendung gegen Typ, Format und Wertebereich (Positivliste) geprüft. |
+| SIC-01 | MUSS | Werte aus Konfiguration oder anderen externen Quellen, die als Argument eines Systembefehls oder als Dateipfad verwendet werden, werden vor dieser Verwendung auf Typ, Format und Wertebereich anhand einer Positivliste geprüft. |
 | SIC-02 | MUSS | Die Prüfung liegt beim verwendenden Modul oder Aufrufer, da der Konfigurationsbaustein keine inhaltliche Prüfung vornimmt (KFG-08). |
 
 ### 13.2 Systembefehl-Aktion
@@ -362,5 +362,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.03 | 2026-06-27 | macodix | Kapitel 13 Sicherheit ergänzt (SIC-01 bis SIC-26, 23 MUSS / 3 KANN), Bereichskürzel SIC: Eingabevalidierung an der Verwendungsstelle, Systembefehl-Aktion, IPC/Serialisierung, Rechtekontext, safe-mode, Konfig-Laden, Protokollierung, Fehlerzustand, mitgelieferte Bibliotheken. |
 | 0.04 | 2026-06-27 | macodix | Konsistenz: Inhaltsverzeichnis ohne Listen-Markup; Konfigurator-Pflichtanforderungen als bedingt gekennzeichnet (nur falls Konfigurator vorhanden); Implementierungsdetail (multiprocessing/pickle) aus Kapitel 13.3 entfernt. |
 | 0.05 | 2026-06-27 | macodix | ÜBR-04 neu gefasst (Entscheidung Martin): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, keine flächendeckenden getter/setter. |
+| 0.06 | 2026-06-27 | macodix | Begriff korrigiert: MOD-04, MOD-06, MOD-09 von Klassenvariablen auf Instanzvariablen; SIC-01 „gegen … geprüft" zu „auf … anhand einer Positivliste geprüft". |
 </content>
 </invoke>

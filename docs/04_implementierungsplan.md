@@ -2,20 +2,20 @@
 
 **Status:** [in Bearbeitung] · **Stand:** 2026-06-27
 
-Dieser Plan legt fest, wie jeder Baustein von pifos in Python umgesetzt wird. Er verfeinert das Konzept (`docs/01_konzept.md`) und die Anforderungen (`docs/02_anforderungen.md`) zum WIE und hält die Bedingungen der Machbarkeit (`docs/03_machbarkeit.md`) ein. Das WAS wird nicht wiederholt. Die eingebetteten Diagramme stammen aus `docs/diagramme.md`. Auslieferung und Ablageort regelt `docs/05_bereitstellung.md`; sie sind nicht Gegenstand dieses Plans.
+Dieser Plan legt fest, wie jeder Baustein von pifos in Python umgesetzt wird. Er verfeinert das Konzept (`docs/01_konzept.md`) und die Anforderungen (`docs/02_anforderungen.md`) zum WIE und hält die Bedingungen der Machbarkeit (`docs/03_machbarkeit.md`) ein. Das WAS wird nicht wiederholt. Klassen-, Datenfluss-, Sequenz- und Zustandsdiagramm sind in die jeweiligen Kapitel eingebettet. Auslieferung und Ablageort regelt `docs/05_bereitstellung.md`; sie sind nicht Gegenstand dieses Plans.
 
 Die Sicherheitsanforderungen aus Kapitel 13 der Anforderungen sind in die Bausteine eingearbeitet, an der Stelle ihrer Umsetzung. Wo eine Festlegung eine Anforderung erfüllt, steht deren Kürzel in Klammern am Satzende. Code-Bezeichner sind englisch, Fließtext deutsch. Alle Festlegungen sind getroffen; offene Wahlpunkte bestehen nicht mehr.
 
 ## Inhaltsverzeichnis
 
-1. Überblick und Architektur  
-2. Aktionen  
-3. Module  
-4. Konfiguration  
-5. Aufrufer-Basisklasse PifosCaller  
-6. Prozessmodell, Steuerung und IPC  
-7. Logging  
-8. Fehlerbehandlung und Ausnahmen  
+**1. Überblick und Architektur**  
+**2. Aktionen**  
+**3. Module**  
+**4. Konfiguration**  
+**5. Aufrufer-Basisklasse PifosCaller**  
+**6. Prozessmodell, Steuerung und IPC**  
+**7. Logging**  
+**8. Fehlerbehandlung und Ausnahmen**  
 
 ## 1. Überblick und Architektur
 
@@ -40,9 +40,9 @@ Die Aufteilung der Aktionen in ein eigenes Paket trennt den wachsenden Satz konk
 
 ### 1.2 Zusammenwirken
 
-Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition (`Module` hält Aktionsinstanzen) und steuert sie über deren Parameter und Klassenvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
+Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition, indem `Module` Aktionsinstanzen hält, und steuert sie über deren Parameter und Instanzvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
 
-Das folgende Klassendiagramm zeigt die drei Bausteine, ihre Basisklassen und Beziehungen. Konkrete Aktionen und Module erben von ihrer Basisklasse; ein konkreter Aufrufer wie der Installer erbt von `PifosCaller`. Abstrakte Methoden sind kursiv. Die öffentlichen Attribute sind laut ÜBR-04 direkt zugänglich; die im Diagramm benannten Lesemethoden wie `get_status()` zeigen den Zugriff beispielhaft und sind nach der Festlegung in Abschnitt 1.4 kein vorgeschriebener Weg.
+Das folgende Klassendiagramm zeigt die drei Bausteine, ihre Basisklassen und Beziehungen. Konkrete Aktionen und Module erben von ihrer Basisklasse; ein konkreter Aufrufer wie der Installer erbt von `PifosCaller`. Abstrakte Methoden sind kursiv. Die öffentlichen Attribute sind laut ÜBR-04 direkt zugänglich; benannte Lesemethoden sind nach der Festlegung in Abschnitt 1.4 (Attributzugriff) nicht vorgesehen.
 
 ```mermaid
 classDiagram
@@ -56,9 +56,6 @@ classDiagram
         +safe_mode
         +backup_location
         +run()*
-        +get_status()
-        +get_stdout()
-        +get_stderr()
     }
 
     class CopyFileAction {
@@ -187,7 +184,7 @@ Drei Festlegungen gelten für alle Bausteine.
 
 Jeder Baustein wählt die einfachste ausreichende Umsetzung; zusätzliche Vererbungsebenen, Formate oder Optionen entstehen erst bei konkretem Bedarf (ÜBR-03, ÜBR-05).
 
-Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen Rechten; erhöhte Rechte werden nur dort und nur so lange wie nötig eingesetzt (SIC-10, SIC-11). Die Einzelheiten stehen bei den Modulen (Kapitel 3) und dem Aufrufer (Kapitel 5).
+Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen Rechten; erhöhte Rechte werden nur dort und nur so lange wie nötig eingesetzt (SIC-10, SIC-11). Die Einzelheiten stehen bei den Modulen (Kapitel 3 „Module") und dem Aufrufer (Kapitel 5 „Aufrufer-Basisklasse PifosCaller").
 
 Öffentliche Attribute sind direkt zugänglich; Zugriffslogik über `@property` kommt nur dort hinzu, wo der Zugriff eine Prüfung oder Berechnung braucht (ÜBR-04). Abschnitt 1.4 führt das aus.
 
@@ -220,7 +217,7 @@ Eine Aktion erledigt genau eine atomare Aufgabe und stellt deren Ausführung und
 
 Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Das Modul liest diese Werte direkt als öffentliche Attribute, etwa `action.status` oder `action.stdout` (AKT-02); benannte Lesemethoden entfallen nach der Festlegung in Abschnitt 1.4 (Attributzugriff). Braucht ein Attribut beim Lesen oder Setzen Logik, kapselt eine `@property` sie, ohne die Zugriffsschreibweise `action.x` zu ändern.
 
-Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.3). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
+Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen"), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.3). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
 
 Optionen passen eine Aktion an Bedingungen ihrer Ausführung an, ohne ihren atomaren Charakter zu verändern (AKT-04). Sie werden als Konstruktorargumente übergeben oder als Attribut gesetzt, nicht durch zusätzliche Aufgaben in `run`.
 
@@ -241,13 +238,13 @@ Die Ausführung erfolgt ohne Shell (`shell=False`) (SIC-03). Befehl und Argument
 
 `Popen` mit getrennten Strömen für stdout und stderr erlaubt das laufende Auslesen während langer Befehle; die Aktion erfasst beide Ströme und den Returncode und stellt sie dem Modul bereit (AKT-02). Bei Bedarf reicht das Modul Ausgaben laufend als Meldungen an den Aufrufer (LOG-02). `subprocess.run` ist nicht gewählt, weil es das Ergebnis erst am Ende liefert und keine laufende Statusmeldung erlaubt.
 
-Werte aus der Konfiguration, die als Argument in `command` oder als Programmpfad einfließen, prüft das aufrufende Modul vor der Übergabe gegen Typ, Format und Wertebereich (Positivliste); die Aktion selbst nimmt keine inhaltliche Prüfung vor (SIC-01, SIC-02). Die Prüfung liegt beim Modul, weil der Konfigurationsbaustein bewusst nicht inhaltlich prüft (Kapitel 3 und Kapitel 4).
+Werte aus der Konfiguration, die als Argument in `command` oder als Programmpfad einfließen, prüft das aufrufende Modul vor der Übergabe auf Typ, Format und Wertebereich anhand einer Positivliste; die Aktion selbst nimmt keine inhaltliche Prüfung vor (SIC-01, SIC-02). Die Prüfung liegt beim Modul, weil der Konfigurationsbaustein bewusst nicht inhaltlich prüft (Kapitel 3 „Module" und Kapitel 4 „Konfiguration").
 
 ### 2.3 Dateiändernde Aktionen und safe-mode
 
 Aktionen, die Dateien ändern, überschreiben oder löschen, bieten den aktivierbaren safe-mode, der die Datei vor der Änderung sichert (AKT-06). `CopyFileAction` ist ein erstes Beispiel; weitere entstehen bei Bedarf.
 
-Ist `safe_mode` gesetzt, legt die Aktion vor der Änderung eine Kopie der Datei an. Standardziel ist derselbe Pfad mit einem Zeitstempel-Zusatz im Namen; das Ziel ist über `backup_location` auf ein anderes Verzeichnis umstellbar (AKT-07). Die Sicherung trägt sich in die Undo-Registratur des aufrufenden systemverändernden Moduls ein und dient damit zugleich dem Rollback (Kapitel 3).
+Ist `safe_mode` gesetzt, legt die Aktion vor der Änderung eine Kopie der Datei an. Standardziel ist derselbe Pfad mit einem Zeitstempel-Zusatz im Namen; das Ziel ist über `backup_location` auf ein anderes Verzeichnis umstellbar (AKT-07). Die Sicherung trägt sich in die Undo-Registratur des aufrufenden systemverändernden Moduls ein und dient damit zugleich dem Rollback (Kapitel 3 „Module").
 
 Die Sicherung ist sicherheitsrelevant und unterliegt drei Vorkehrungen. Die Zugriffsrechte der Sicherung gehen nicht über die der Originaldatei hinaus; die Kopie übernimmt deren Rechte und weitet sie nicht aus (SIC-13). `backup_location` wird vor der Nutzung als Pfad geprüft und auf das vorgesehene Verzeichnis begrenzt (SIC-14). Prüfung und Schreiben erfolgen so, dass Manipulation über symbolische Verweise und zeitliche Wettläufe zwischen Prüfung und Nutzung vermieden werden, etwa durch Öffnen ohne Folgen symbolischer Verweise und Schreiben über einen Dateideskriptor statt erneut über den Pfad (SIC-15).
 
@@ -270,17 +267,17 @@ Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfigu
 | `start(self) -> int` | abstrakt: führt die Modulaufgabe aus, gibt den Rückgabewert zurück |
 | `check_config(self, config: Config) -> None` | prüft die Werte beim Start anhand `CONFIG` und legt sie ab (MOD-09) |
 | `run_action(self, action: Action) -> int` | führt eine Aktion aus und übernimmt deren Status (MOD-01) |
-| `control_action(self, action, **options) -> None` | steuert eine Aktion über Parameter oder Klassenvariablen (MOD-06) |
+| `control_action(self, action, **options) -> None` | steuert eine Aktion über Parameter oder Instanzvariablen (MOD-06) |
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
 
-`send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
+`send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6 „Prozessmodell, Steuerung und IPC"); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
 
 ### 3.2 Konfigurationsdeklaration und Prüfung
 
-Ein Modul macht über `CONFIG` sichtbar, welche Konfiguration es benötigt (MOD-08). Jeder Eintrag ist ein `ConfigItem` (Kapitel 4) mit Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung. Die Deklaration unterscheidet Pflicht- von Kann-Werten über das Feld `required` (MOD-10). Wo möglich, trägt ein Eintrag einen sinnfälligen Vorgabewert (MOD-11).
+Ein Modul macht über `CONFIG` sichtbar, welche Konfiguration es benötigt (MOD-08). Jeder Eintrag ist ein `ConfigItem` (Kapitel 4 „Konfiguration") mit Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung. Die Deklaration unterscheidet Pflicht- von Kann-Werten über das Feld `required` (MOD-10). Wo möglich, trägt ein Eintrag einen sinnfälligen Vorgabewert (MOD-11).
 
-Beim Start prüft `check_config` die eingehenden Werte anhand der Deklaration: Pflichtwerte müssen vorhanden sein, fehlende Kann-Werte erhalten ihren Vorgabewert, und das Feld `check` wird angewendet (MOD-09). Die Prüfung ist formal, nicht inhaltlich (KFG-08). Werte, die das Modul anschließend als Argument eines Systembefehls oder als Dateipfad verwendet, prüft es vor dieser Verwendung gegen Typ, Format und Wertebereich (Positivliste), da der Konfigurationsbaustein keine inhaltliche Prüfung vornimmt (SIC-01, SIC-02). Nach erfolgreicher Prüfung legt das Modul die Werte in seinen Instanzvariablen ab (MOD-04).
+Beim Start prüft `check_config` die eingehenden Werte anhand der Deklaration: Pflichtwerte müssen vorhanden sein, fehlende Kann-Werte erhalten ihren Vorgabewert, und das Feld `check` wird angewendet (MOD-09). Die Prüfung ist formal, nicht inhaltlich (KFG-08). Werte, die das Modul anschließend als Argument eines Systembefehls oder als Dateipfad verwendet, prüft es vor dieser Verwendung auf Typ, Format und Wertebereich anhand einer Positivliste, da der Konfigurationsbaustein keine inhaltliche Prüfung vornimmt (SIC-01, SIC-02). Nach erfolgreicher Prüfung legt das Modul die Werte in seinen Instanzvariablen ab (MOD-04).
 
 ### 3.3 Systemverändernde Module
 
@@ -294,7 +291,7 @@ Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig un
 
 ### 3.4 Rechtekontext
 
-Systemverändernde Module greifen mit erhöhten Rechten ein. Ein Modul läuft mit den geringsten zur Aufgabe nötigen Rechten und nutzt erhöhte Rechte nur dort und nur so lange wie nötig (SIC-10, SIC-11). Der Modulprozess erbt den Rechtekontext, den der Aufrufer ihm beim Start gibt (Kapitel 5); das Modul erweitert ihn nicht von sich aus.
+Systemverändernde Module greifen mit erhöhten Rechten ein. Ein Modul läuft mit den geringsten zur Aufgabe nötigen Rechten und nutzt erhöhte Rechte nur dort und nur so lange wie nötig (SIC-10, SIC-11). Der Modulprozess erbt den Rechtekontext, den der Aufrufer ihm beim Start gibt (Kapitel 5 „Aufrufer-Basisklasse PifosCaller"); das Modul erweitert ihn nicht von sich aus.
 
 ### 3.5 Vertagtes Detail
 
@@ -306,7 +303,7 @@ Die Konfiguration ist die Schnittstelle zwischen Anwender und pifos. Die Klasse 
 
 ### 4.1 Config-Objekt
 
-`Config` in `config.py` ist die zentrale Schnittstelle zwischen Konfigurationen und Aufrufern (KFG-01). Sie hält die Konfiguration intern als einfache Strukturen (dict, list), damit sie über die Prozessgrenze an einen Modulprozess übergeben werden kann (Kapitel 6, Bedingung B3 der Machbarkeit).
+`Config` in `config.py` ist die zentrale Schnittstelle zwischen Konfigurationen und Aufrufern (KFG-01). Sie hält die Konfiguration intern als einfache Strukturen (dict, list), damit sie über die Prozessgrenze an einen Modulprozess übergeben werden kann (Kapitel 6 „Prozessmodell, Steuerung und IPC", Bedingung B3 der Machbarkeit).
 
 | Methode | Zweck |
 |---------|-------|
@@ -329,7 +326,7 @@ Für jede genutzte Konfigurationsart gibt es eine eigene Klasse, die die Konfigu
 | json | `JsonConfig` | `json` | `json` |
 | toml | `TomlConfig` | `tomllib` | `tomli-w` (optional) |
 
-ini und json lesen und schreiben mit der Standardbibliothek und bilden den schreibbaren Pflichtumfang. toml liest `TomlConfig` mit `tomllib` (ab Python 3.13 in der Standardbibliothek); der Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und wird erst bei Bedarf aktiviert. Diese Festlegung übernimmt `docs/05_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat"); der Plan wiederholt sie nicht. Eine Formatklasse darf zum Einlesen und Schreiben von Dateien die Aktionsklassen nutzen (KFG-07).
+ini und json lesen und schreiben mit der Standardbibliothek und bilden den schreibbaren Pflichtumfang. toml liest `TomlConfig` mit `tomllib`, das seit Python 3.11 zur Standardbibliothek gehört und bei der Mindestversion 3.13 ohnehin vorhanden ist; der Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und wird erst bei Bedarf aktiviert. Diese Festlegung übernimmt `docs/05_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat"); der Plan wiederholt sie nicht. Eine Formatklasse darf zum Einlesen und Schreiben von Dateien die Aktionsklassen nutzen (KFG-07).
 
 ini ist das primäre Format, weil es mit Bordmitteln liest und schreibt, von Hand editierbar ist und seine Sektionen Module natürlich abbilden; json ergänzt es für verschachtelte oder maschinennahe Konfiguration. Welches Format ein Aufrufer nutzt, bestimmt er selbst.
 
@@ -369,7 +366,7 @@ pifos stellt die abstrakte Basisklasse `PifosCaller` in `pifos_caller.py` bereit
 | `receive_result(self, handle) -> IpcMessage` | empfängt oder fordert Meldungen und Ergebnisse an (CAL-04, STR-03) |
 | `write_log(self, message) -> None` | schreibt eine Meldung ins Logfile (CAL-05, LOG-01) |
 
-`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher durch Instanziierung eines `Config`-Objekts (STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6).
+`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher durch Instanziierung eines `Config`-Objekts (STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
 
 ### 5.2 Reaktion auf den Modulausgang
 
@@ -395,7 +392,7 @@ Ein Modul ist eine Python-Klasse, wird zur Ausführung aber zu einem eigenen, st
 
 Jedes Modul läuft in einem eigenen Betriebssystem-Prozess über `multiprocessing.Process`. Das deckt den Rückgabewert (STR-05), die sequenzielle und parallele Führung (STR-06) und die Steuerung (CAL-02) mit Bordmitteln ab. Ein eigener Prozess trägt einen eigenen Exitcode, ist über Signale anhaltbar und beendbar und ist gegenüber dem Aufrufer isoliert, was die CRITICAL-Selbstbeendigung eines Moduls absichert (EXC-03).
 
-Die Startmethode ist `spawn`: Sie ist deterministisch und frei von den Sperr-Risiken, die `fork` bei einem mehrfädigen Aufrufer mit Rich-Oberfläche hätte. Voraussetzung ist, dass Modulklasse und `Config`-Objekt picklebar bleiben, also keine offenen Datei- oder Socket-Handles als Klassenvariablen halten (Bedingung B3 der Machbarkeit). `subprocess` mit eigenem Launcher-Skript ist nicht gewählt, weil es mehr Eigenbau verlangt und Module laut Konzept Python-Klassen sind; `threading` nicht, weil es keinen eigenen Exitcode, kein Anhalten über Signale und keine Isolation bei CRITICAL-Beendigung böte.
+Die Startmethode ist `spawn`: Sie ist deterministisch und frei von den Sperr-Risiken, die `fork` bei einem mehrfädigen Aufrufer mit Rich-Oberfläche hätte. Voraussetzung ist, dass Modulklasse und `Config`-Objekt picklebar bleiben, also keine offenen Datei- oder Socket-Handles als Instanzvariablen halten (Bedingung B3 der Machbarkeit). `subprocess` mit eigenem Launcher-Skript ist nicht gewählt, weil es mehr Eigenbau verlangt und Module laut Konzept Python-Klassen sind; `threading` nicht, weil es keinen eigenen Exitcode, kein Anhalten über Signale und keine Isolation bei CRITICAL-Beendigung böte.
 
 Das `Config`-Objekt übergibt der Aufrufer als Startargument von `multiprocessing.Process`; multiprocessing pickelt es in den Kindprozess (STR-02). Ein zusätzlicher Datei-Umweg entfällt, weil `Config` seine Daten als einfache Strukturen hält und damit picklebar ist (Bedingung B3). Module ohne Konfiguration erhalten kein Argument (MOD-03).
 
@@ -403,7 +400,7 @@ Das `Config`-Objekt übergibt der Aufrufer als Startargument von `multiprocessin
 
 Je Modulprozess besteht eine duplexe `multiprocessing.Pipe` zwischen Aufrufer und Modul (STR-01). Der Aufrufer schreibt Befehle hinab, das Modul schreibt Meldungen, Ergebnisse und Ausnahmen hinauf (STR-03, STR-04). Mehrere parallele Module multiplext der Aufrufer mit `multiprocessing.connection.wait()` über ihre Verbindungen (STR-06).
 
-Die Pipe stellt synchron zu, ohne Hintergrund-Thread; eine Meldung erreicht den Aufrufer damit verlässlich vor dem Prozessende. Das erfüllt die CRITICAL-Zustellung (EXC-03) ohne Sonderbehandlung. `multiprocessing.Queue` ist nicht gewählt, weil sie einen Hintergrund-Feeder-Thread nutzt, dessen Leeren vor dem Prozessende eine Stolperstelle gerade für EXC-03 wäre. Ein Unix-Domain-Socket oder TCP ist nicht gewählt, weil er für den rein lokalen Python-zu-Python-Fall mehr Eigenbau verlangt (ÜBR-03).
+Die Pipe stellt synchron zu, ohne Hintergrund-Thread; eine Meldung erreicht den Aufrufer damit verlässlich vor dem Prozessende. Das erfüllt die CRITICAL-Zustellung (EXC-03) ohne Sonderbehandlung. `multiprocessing.Queue` ist nicht gewählt. Ihr Hintergrund-Feeder-Thread müsste vor dem Prozessende geleert werden, sonst gehen Meldungen verloren, was gerade EXC-03 gefährdet. Ein Unix-Domain-Socket oder TCP ist nicht gewählt, weil er für den rein lokalen Python-zu-Python-Fall mehr Eigenbau verlangt (ÜBR-03).
 
 Die IPC erfolgt ausschließlich lokal zwischen Aufrufer und Modulprozess, nicht über Netz (SIC-07). Über IPC werden nur Daten innerhalb der Vertrauensdomäne des Aufrufers ausgetauscht, der seine eigenen Module startet; aus nicht vertrauenswürdiger Quelle wird nichts deserialisiert (SIC-08). Die übertragenen Nutzdaten beschränken sich auf einfache Datentypen; ausführbare oder zustandsbehaftete Objekte werden nicht übertragen (SIC-09).
 
@@ -429,13 +426,13 @@ module_runner(module_cls: type[Module], config: Config | None,
               conn: Connection, loglevel: LogLevel) -> int
 ```
 
-Sie instanziiert das Modul, prüft mit `check_config` die Konfiguration anhand der Deklaration und legt die Werte in den Klassenvariablen ab (MOD-04, MOD-09). Danach tritt sie in die Befehlsschleife ein: Sie liest `IpcMessage` der Art `COMMAND` und `REQUEST`, bildet sie auf Modulmethoden ab (Aktivität ausführen, Daten anfordern, anhalten, fortsetzen, beenden), reicht Meldungen hinauf und endet bei `terminate` mit dem Rückgabewert des Moduls (STR-04, STR-05). Jeder Befehlsschritt liegt in `try/except` für die Ausnahme-Weiterleitung (Kapitel 8). Eine einmalige Ausführung ohne Schleife ist nicht gewählt, weil sie die laufende bidirektionale Steuerung aus STR-04 nicht böte.
+Sie instanziiert das Modul, prüft mit `check_config` die Konfiguration anhand der Deklaration und legt die Werte in den Instanzvariablen ab (MOD-04, MOD-09). Danach tritt sie in die Befehlsschleife ein: Sie liest `IpcMessage` der Art `COMMAND` und `REQUEST`, bildet sie auf Modulmethoden ab (Aktivität ausführen, Daten anfordern, anhalten, fortsetzen, beenden), reicht Meldungen hinauf und endet bei `terminate` mit dem Rückgabewert des Moduls (STR-04, STR-05). Jeder Befehlsschritt liegt in `try/except` für die Ausnahme-Weiterleitung (Kapitel 8 „Fehlerbehandlung und Ausnahmen"). Eine einmalige Ausführung ohne Schleife ist nicht gewählt, weil sie die laufende bidirektionale Steuerung aus STR-04 nicht böte.
 
 ### 6.5 Anhalten und Fortsetzen
 
-Anhalten und Fortsetzen erfolgen kooperativ über IPC an Prüfpunkten zwischen Aktionen (CAL-02). Der Aufrufer sendet einen Pause-Befehl; das Modul prüft an definierten Prüfpunkten zwischen seinen atomaren Aktionen und hält dort, bis ein Fortsetzen-Befehl kommt. So hält das Modul stets in konsistentem Zustand, und eine laufende Aktion wird nicht zerrissen.
+Anhalten und Fortsetzen erfolgen kooperativ über IPC an Prüfpunkten zwischen Aktionen (CAL-02). Der Aufrufer sendet einen Pause-Befehl; das Modul prüft an definierten Prüfpunkten zwischen seinen atomaren Aktionen und hält dort, bis ein Fortsetzen-Befehl kommt. So bleibt das Modul stets in konsistentem Zustand, und eine laufende Aktion wird nicht mitten in der Ausführung unterbrochen.
 
-Die Signale SIGSTOP und SIGCONT sind nicht aufgenommen. Sie frören den Prozess auch mitten in einer Aktion ein und ließen einen bereits gestarteten Kindprozess eines Systembefehls weiterlaufen; eine solche Notbremse wäre eine Zusatzfunktion über das Geforderte hinaus (ÜBR-05). Eine spätere Ergänzung bliebe möglich, verlangte aber eine eigene Festlegung.
+Die Signale SIGSTOP und SIGCONT sind nicht aufgenommen. Sie hielten den Prozess auch mitten in einer Aktion an und ließen einen bereits gestarteten Kindprozess eines Systembefehls weiterlaufen; ein solches erzwungenes Anhalten wäre eine Zusatzfunktion über das Geforderte hinaus (ÜBR-05). Eine spätere Ergänzung bliebe möglich, verlangte aber eine eigene Festlegung.
 
 ### 6.6 Beenden und Eskalation
 
@@ -453,7 +450,7 @@ sequenceDiagram
     C->>Cfg: instanziieren, Quelle laden
     Cfg-->>C: Config-Objekt
     C->>M: Modulprozess starten (IPC), Config uebergeben
-    M->>M: CONFIG pruefen, Werte in Klassenvariablen ablegen
+    M->>M: CONFIG pruefen, Werte in Instanzvariablen ablegen
 
     C->>M: Befehl (Aktivitaet ausfuehren)
     M->>A: Aktion ausfuehren, Optionen setzen
@@ -473,7 +470,7 @@ Das folgende Zustandsdiagramm zeigt die Zustände eines Modulprozesses aus Sicht
 stateDiagram-v2
     [*] --> Gestartet : start_module()
     Gestartet --> Angehalten : stop_module()
-    Angehalten --> Gestartet : fortsetzen
+    Angehalten --> Gestartet : resume_module()
     Gestartet --> Beendet : terminate_module()
     Angehalten --> Beendet : terminate_module()
     Gestartet --> Beendet : Modul beendet sich (CRITICAL)
@@ -488,9 +485,9 @@ Das Logging übernimmt allein der Aufrufer; Module und Aktionen führen kein eig
 
 ### 7.1 Stufen und Filterung
 
-Das Logging unterscheidet die vier Stufen INFO, WARN, ERROR und CRITICAL, abgebildet als Enum `LogLevel` (LOG-03, Kapitel 6). Die vier Stufen bildet das `logging`-Modul der Standardbibliothek im Aufrufer ab. Das Loglevel des Aufrufers ist über die Variable `loglevel` einstellbar (LOG-04).
+Das Logging unterscheidet die vier Stufen INFO, WARN, ERROR und CRITICAL, abgebildet als Enum `LogLevel` (LOG-03, Kapitel 6 „Prozessmodell, Steuerung und IPC"). Die vier Stufen bildet das `logging`-Modul der Standardbibliothek im Aufrufer ab. Das Loglevel des Aufrufers ist über die Variable `loglevel` einstellbar (LOG-04).
 
-Der Aufrufer gibt das eingestellte Loglevel beim Start an das Modul weiter (LOG-05, Kapitel 5). Das Modul kennzeichnet jede `IpcMessage` mit ihrer Stufe (LOG-03) und kann Meldungen unterhalb der Schwelle bereits selbst zurückhalten; es entscheidet, was es sendet (LOG-02). Der Aufrufer entscheidet endgültig, welche der empfangenen Meldungen er ins Logfile aufnimmt (LOG-01, LOG-02). Die doppelte Filterung vermeidet, dass das Modul Meldungen sendet, die der Aufrufer ohnehin verwirft.
+Der Aufrufer gibt das eingestellte Loglevel beim Start an das Modul weiter (LOG-05, Kapitel 5 „Aufrufer-Basisklasse PifosCaller"). Das Modul kennzeichnet jede `IpcMessage` mit ihrer Stufe (LOG-03) und kann Meldungen unterhalb der Schwelle bereits selbst zurückhalten; es entscheidet, was es sendet (LOG-02). Der Aufrufer entscheidet endgültig, welche der empfangenen Meldungen er ins Logfile aufnimmt (LOG-01, LOG-02). Die doppelte Filterung vermeidet, dass das Modul Meldungen sendet, die der Aufrufer ohnehin verwirft.
 
 ### 7.2 Schutz protokollierter Fremddaten
 
@@ -506,7 +503,7 @@ pifos führt eine schlanke Ausnahmehierarchie in `exceptions.py`. `PifosError` i
 
 ### 8.2 Weiterleitung über die Prozessgrenze
 
-Eine Python-Exception überschreitet die Prozessgrenze zwischen Modul und Aufrufer nicht als natives Objekt. Die Befehlsschleife `module_runner` (Kapitel 6) fängt Ausnahmen aus Aktionen und Modulmethoden und überführt sie in eine `IpcMessage(kind=EXCEPTION)`, die Typname, Meldung und den als Text formatierten Traceback trägt, sowie die Logstufe (EXC-02). Der Aufrufer empfängt sie und protokolliert oder verarbeitet sie. Das Pickeln des Exception-Objekts selbst ist nicht gewählt, weil nicht jede Exception verlustfrei picklebar ist und Tracebacks dabei teils verloren gehen.
+Eine Python-Exception überschreitet die Prozessgrenze zwischen Modul und Aufrufer nicht als natives Objekt. Die Befehlsschleife `module_runner` (Kapitel 6 „Prozessmodell, Steuerung und IPC") fängt Ausnahmen aus Aktionen und Modulmethoden und überführt sie in eine `IpcMessage(kind=EXCEPTION)`, die Typname, Meldung und den als Text formatierten Traceback trägt, sowie die Logstufe (EXC-02). Der Aufrufer empfängt sie und protokolliert oder verarbeitet sie. Das Pickeln des Exception-Objekts selbst ist nicht gewählt, weil nicht jede Exception verlustfrei picklebar ist und Tracebacks dabei teils verloren gehen.
 
 Die Weiterleitung folgt dem Loglevel: Ausnahmen tragen die Stufen ERROR oder CRITICAL und werden stets weitergeleitet (EXC-02). Stuft ein Modul einen Fehler als CRITICAL ein und beendet sich, stellt es über die synchrone Pipe zuerst die Zustellung der Ausnahme-Meldung sicher und beendet sich dann mit einem Rückgabewert ungleich 0 (EXC-03, STR-05). Den Rückgabewert ungleich 0 legt das Modul selbst fest; eine feste Vorgabe besteht nicht.
 
@@ -514,7 +511,7 @@ Die Weiterleitung folgt dem Loglevel: Ausnahmen tragen die Stufen ERROR oder CRI
 
 Bricht eine Aktion oder ein Modul ab, verbleibt kein undefinierter unsicherer Zustand; belegte Ressourcen werden freigegeben (SIC-21). Dateideskriptoren und Kindprozesse werden über Kontextmanager und gezieltes Aufräumen geschlossen, auch im Fehlerfall.
 
-Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6) und einen Eingriff eines systemverändernden Moduls unvollständig hinterlassen. Nach einer erzwungenen Beendigung ist über den Überprüfungsmodus `check` (Kapitel 3) erkennbar, ob der Eingriff vollständig, teilweise oder nicht erfolgte (SIC-22). Der Überprüfungsmodus ist damit die Vorkehrung gegen den unvollständigen Zustand nach SIGKILL.
+Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell, Steuerung und IPC") und einen Eingriff eines systemverändernden Moduls unvollständig hinterlassen. Nach einer erzwungenen Beendigung ist über den Überprüfungsmodus `check` (Kapitel 3 „Module") erkennbar, ob der Eingriff vollständig, teilweise oder nicht erfolgte (SIC-22). Der Überprüfungsmodus ist damit die Vorkehrung gegen den unvollständigen Zustand nach SIGKILL.
 
 ## Versionshistorie
 
@@ -523,3 +520,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6) und einen Eingri
 | 0.01 | 2026-06-27 | macodix | Erstanlage als Rohmaterial: 18 WIE-Themen mit Optionen und Empfehlung. |
 | 0.02 | 2026-06-27 | macodix | Ausarbeitung zum vollständigen Implementierungsplan: baustein-orientierte Gliederung (Überblick mit Klassendiagramm, Aktionen, Module, Konfiguration, PifosCaller, Prozess/IPC mit Sequenz- und Zustandsdiagramm, Logging, Ausnahmen); Empfehlungen in Festlegungen überführt, Sicherheitsanforderungen je Baustein eingearbeitet, Anforderungs-Rückverfolgung ergänzt; offene Entscheidung zu getter/setter (ÜBR-04) bei Martin belassen. |
 | 0.03 | 2026-06-27 | macodix | Attributzugriff festgelegt (ÜBR-04): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, interne Attribute ohne Zugriffsmethoden; abhängige Stellen in Überblick und Aktionen nachgezogen. Datenfluss-/Komponentendiagramm in Kapitel 1 ergänzt. |
+| 0.04 | 2026-06-27 | macodix | Konsistenzbefunde behoben: tomllib-Version korrigiert (seit 3.11), Verweis auf gelöschtes Diagramm-Dokument entfernt, benannte Lesemethoden aus Klassendiagramm gestrichen, Inhaltsverzeichnis ohne Listen-Markup, resume_module im Zustandsdiagramm ergänzt; durchgängig Instanzvariable statt Klassenvariable; Stilkorrekturen (Vollsatz-Klammer aufgelöst, bildhafte Sprache ersetzt, „prüfen gegen" zu „auf … prüfen", Kapitelverweise mit Namen). |
