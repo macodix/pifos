@@ -45,6 +45,8 @@ Die Bibliotheken müssen so auf das Zielsystem kommen, dass dort nichts nachinst
 
 Die gebündelten Bibliotheken liegen in einem pifos-eigenen Verzeichnis, das der Aufrufer-Einstiegspunkt dem Importpfad voranstellt. So gewinnen die mitgelieferten Versionen unabhängig davon, ob auf dem Ziel gleichnamige Pakete systemweit vorhanden sind. Das stützt zugleich die Startmethode `spawn` des Modul-Prozessmodells: Der neu gestartete Interpreter findet die pifos-Pakete und ihre gebündelten Bibliotheken über denselben Importpfad wieder.
 
+**Umsetzungshinweis.** Das Voranstellen des Importpfads ist beim Einstiegspunkt des Aufrufers zu implementieren. Es ist der einzige Berührungspunkt zwischen Bereitstellung und Code; er wird daher hier vermerkt und nicht eigens im Implementierungsplan geführt.
+
 ### 2.3 Python-Interpreter als Voraussetzung
 
 pifos bündelt Bibliotheken, nicht den Interpreter. Der Python-Interpreter ab Version 3.13 ist eine Voraussetzung des Zielsystems (siehe Kapitel „Python-Mindestversion 3.13"). Aktuelle Server-Distributionen liefern Python 3.13 mit. Fehlt er, ist das Bereitstellen des Interpreters Sache der Systemvorbereitung und nicht Teil der pifos-Auslieferung.
@@ -102,5 +104,6 @@ toml-Schreiben ist optional und wird erst aktiviert, wenn ein Aufrufer es brauch
 |---------|-------|-----|----------|
 | 0.01 | 2026-06-27 | macodix | Erstanlage: Auslieferung des Kerns (vendoring), Ablageort `/opt/pifos` nach FHS, Konsequenzen der Mindestversion 3.13, Schreibweg je Konfigurationsformat. |
 | 0.02 | 2026-06-27 | macodix | Konsistenz: Inhaltsverzeichnis und Kapiteleinleitung (Kapitel 2) ergänzt; falschen Python-Versionskonflikt entfernt (Regeltext der Konvention nennt 3.13), Kapitel „Hinweis an den Hauptchat" gestrichen. |
+| 0.03 | 2026-06-27 | macodix | Umsetzungshinweis ergänzt: Voranstellen des Importpfads ist beim Aufrufer-Einstiegspunkt zu implementieren (einziger Berührungspunkt Bereitstellung/Code). |
 </content>
 </invoke>
