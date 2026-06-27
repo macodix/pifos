@@ -42,112 +42,27 @@ Die Aufteilung der Aktionen in ein eigenes Paket trennt den wachsenden Satz konk
 
 Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition, indem `Module` Aktionsinstanzen hält, und steuert sie über deren Parameter und Instanzvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
 
-Das folgende Klassendiagramm zeigt die drei Bausteine, ihre Basisklassen und Beziehungen. Konkrete Aktionen und Module erben von ihrer Basisklasse; ein konkreter Aufrufer wie der Installer erbt von `PifosCaller`. Abstrakte Methoden sind kursiv. Die öffentlichen Attribute sind laut ÜBR-04 direkt zugänglich; benannte Lesemethoden sind nach der Festlegung in Abschnitt 1.4 (Attributzugriff) nicht vorgesehen.
+Das folgende Klassendiagramm zeigt die Grundstruktur: die vier Kern-Basisklassen und ihre zentralen Beziehungen. Ein Modul nutzt Aktionen über Komposition und erhält beim Start ein `Config`-Objekt; der Aufrufer startet und steuert Module über IPC. Die Abstraktheit der drei Basisklassen ist mit `<<abstract>>` angedeutet. Konkrete Unterklassen, die Formatklassen, `ConfigItem` und die vollständigen Methodenlisten stehen im Text der Kapitel 2 bis 5; das Diagramm doppelt sie nicht.
 
 ```mermaid
 classDiagram
     direction LR
 
-    class Action {
-        <<abstract>>
-        +status
-        +stdout
-        +stderr
-        +safe_mode
-        +backup_location
-        +run()*
-    }
-
-    class CopyFileAction {
-        +run()
-    }
-    class SysCmdAction {
-        +command
-        +run()
-    }
-
-    Action <|-- CopyFileAction
-    Action <|-- SysCmdAction
-    note for SysCmdAction "generische Aktion fuer Systembefehle (AKT-08)"
-
-    class Module {
-        <<abstract>>
-        +CONFIG : list~ConfigItem~
-        +loglevel
-        +start()*
-        +run_action()
-        +control_action()
-        +send_message()
-        +receive_message()
-    }
-
-    class InstModule {
-        +check()
-        +rollback()
-    }
-
-    Module <|-- InstModule
-    note for InstModule "systemveraenderndes Modul: Ueberpruefungsmodus + Rollback (MOD-12, MOD-13)"
-
-    Module o-- "0..*" Action : Komposition
-
-    class Config {
-        +get_value()
-        +get_section()
-        +get_list()
-        +load_dict()
-        +load_raw()
-        +check_pattern()
-    }
-
-    class ConfigItem {
-        <<dataclass>>
-        +name
-        +required
-        +default
-        +check
-        +description
-    }
-
-    class IniConfig {
-        +to_dict()
-    }
-    class TomlConfig {
-        +to_dict()
-    }
-    class JsonConfig {
-        +to_dict()
-    }
-
-    Config ..> ConfigItem : nutzt
-    Config <-- IniConfig : liefert dict/raw
-    Config <-- TomlConfig : liefert dict/raw
-    Config <-- JsonConfig : liefert dict/raw
-    Module ..> Config : erhaelt beim Start
-    Module ..> ConfigItem : deklariert in CONFIG
-
     class PifosCaller {
         <<abstract>>
-        +loglevel
-        +start_module()
-        +stop_module()
-        +terminate_module()
-        +send_command()
-        +receive_result()
-        +write_log()
     }
-
-    class LsbInstaller {
-        +ui
-        +run()
+    class Module {
+        <<abstract>>
     }
+    class Action {
+        <<abstract>>
+    }
+    class Config
 
-    PifosCaller <|-- LsbInstaller
+    Module o-- "0..*" Action : Komposition
+    Module ..> Config : erhaelt beim Start
     PifosCaller ..> Module : startet/steuert via IPC
-    PifosCaller ..> Config : instanziiert und uebergibt
 ```
-
-Das Diagramm zeigt `to_dict()` als Lesemethode der Formatklassen; den Schreibweg ergänzt Kapitel 4 (Konfiguration). Die Formatklasse `TomlConfig` liest mit `tomllib`; ihr Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und folgt der Festlegung in `docs/05_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat").
 
 Während das Klassendiagramm die Struktur zeigt, zeigt das folgende Datenflussdiagramm das Zusammenwirken zur Laufzeit und den Datenfluss. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet darüber Modulprozesse und führt als einziger das Logfile. Aktionen erfassen Status und Ausgaben, das Modul reicht ausgewählte Meldungen per IPC nach oben, und nur der Aufrufer schreibt das Logfile (LOG-01, LOG-02).
 
@@ -190,7 +105,7 @@ Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen R
 
 ### 1.4 Attributzugriff
 
-ÜBR-04 verlangt einen geregelten Zugriff auf die Attribute, ÜBR-03 zugleich die einfachste ausreichende Lösung. Beides erfüllt der pythonische Weg über direkten Attributzugriff.
+Der Zugriff auf die Attribute soll geregelt und zugleich so einfach wie möglich sein; beides erfüllt der pythonische Weg über direkten Attributzugriff (ÜBR-03, ÜBR-04).
 
 Der Normalfall ist der direkte Zugriff auf ein öffentliches Attribut: `obj.x` zum Lesen und Schreiben. Flächendeckende `get_x()`/`set_x()`-Methoden entfallen; sie wären un-idiomatischer Boilerplate ohne Mehrwert (ÜBR-03).
 
@@ -400,7 +315,7 @@ Das `Config`-Objekt übergibt der Aufrufer als Startargument von `multiprocessin
 
 Je Modulprozess besteht eine duplexe `multiprocessing.Pipe` zwischen Aufrufer und Modul (STR-01). Der Aufrufer schreibt Befehle hinab, das Modul schreibt Meldungen, Ergebnisse und Ausnahmen hinauf (STR-03, STR-04). Mehrere parallele Module multiplext der Aufrufer mit `multiprocessing.connection.wait()` über ihre Verbindungen (STR-06).
 
-Die Pipe stellt synchron zu, ohne Hintergrund-Thread; eine Meldung erreicht den Aufrufer damit verlässlich vor dem Prozessende. Das erfüllt die CRITICAL-Zustellung (EXC-03) ohne Sonderbehandlung. `multiprocessing.Queue` ist nicht gewählt. Ihr Hintergrund-Feeder-Thread müsste vor dem Prozessende geleert werden, sonst gehen Meldungen verloren, was gerade EXC-03 gefährdet. Ein Unix-Domain-Socket oder TCP ist nicht gewählt, weil er für den rein lokalen Python-zu-Python-Fall mehr Eigenbau verlangt (ÜBR-03).
+Die Pipe stellt synchron zu, ohne Hintergrund-Thread; eine Meldung erreicht den Aufrufer damit verlässlich vor dem Prozessende. Das erfüllt die CRITICAL-Zustellung (EXC-03) ohne Sonderbehandlung. `multiprocessing.Queue` ist nicht gewählt. Ihr Hintergrund-Feeder-Thread müsste vor dem Prozessende geleert werden, sonst gehen Meldungen verloren, was die garantierte Zustellung bei CRITICAL-Beendigung gefährdet (EXC-03). Ein Unix-Domain-Socket oder TCP ist nicht gewählt, weil er für den rein lokalen Python-zu-Python-Fall mehr Eigenbau verlangt (ÜBR-03).
 
 Die IPC erfolgt ausschließlich lokal zwischen Aufrufer und Modulprozess, nicht über Netz (SIC-07). Über IPC werden nur Daten innerhalb der Vertrauensdomäne des Aufrufers ausgetauscht, der seine eigenen Module startet; aus nicht vertrauenswürdiger Quelle wird nichts deserialisiert (SIC-08). Die übertragenen Nutzdaten beschränken sich auf einfache Datentypen; ausführbare oder zustandsbehaftete Objekte werden nicht übertragen (SIC-09).
 
@@ -426,7 +341,7 @@ module_runner(module_cls: type[Module], config: Config | None,
               conn: Connection, loglevel: LogLevel) -> int
 ```
 
-Sie instanziiert das Modul, prüft mit `check_config` die Konfiguration anhand der Deklaration und legt die Werte in den Instanzvariablen ab (MOD-04, MOD-09). Danach tritt sie in die Befehlsschleife ein: Sie liest `IpcMessage` der Art `COMMAND` und `REQUEST`, bildet sie auf Modulmethoden ab (Aktivität ausführen, Daten anfordern, anhalten, fortsetzen, beenden), reicht Meldungen hinauf und endet bei `terminate` mit dem Rückgabewert des Moduls (STR-04, STR-05). Jeder Befehlsschritt liegt in `try/except` für die Ausnahme-Weiterleitung (Kapitel 8 „Fehlerbehandlung und Ausnahmen"). Eine einmalige Ausführung ohne Schleife ist nicht gewählt, weil sie die laufende bidirektionale Steuerung aus STR-04 nicht böte.
+Sie instanziiert das Modul, prüft mit `check_config` die Konfiguration anhand der Deklaration und legt die Werte in den Instanzvariablen ab (MOD-04, MOD-09). Danach tritt sie in die Befehlsschleife ein: Sie liest `IpcMessage` der Art `COMMAND` und `REQUEST`, bildet sie auf Modulmethoden ab (Aktivität ausführen, Daten anfordern, anhalten, fortsetzen, beenden), reicht Meldungen hinauf und endet bei `terminate` mit dem Rückgabewert des Moduls (STR-04, STR-05). Jeder Befehlsschritt liegt in `try/except` für die Ausnahme-Weiterleitung (Kapitel 8 „Fehlerbehandlung und Ausnahmen"). Eine einmalige Ausführung ohne Schleife ist nicht gewählt, weil sie die laufende bidirektionale Steuerung zwischen Aufrufer und Modul nicht böte (STR-04).
 
 ### 6.5 Anhalten und Fortsetzen
 
@@ -477,7 +392,7 @@ stateDiagram-v2
     Beendet --> [*]
 ```
 
-Der Übergang „Modul beendet sich (CRITICAL)" bildet EXC-03 ab: Stuft ein Modul einen Fehler als CRITICAL ein und beendet sich, stellt es über die synchrone Pipe vorher sicher, dass die Ausnahme-Meldungen den Aufrufer noch erreichen.
+Der Übergang „Modul beendet sich (CRITICAL)" zeigt den geordneten Selbstabschluss: Stuft ein Modul einen Fehler als CRITICAL ein und beendet sich, stellt es über die synchrone Pipe vorher sicher, dass die Ausnahme-Meldungen den Aufrufer noch erreichen (EXC-03).
 
 ## 7. Logging
 
@@ -521,3 +436,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.02 | 2026-06-27 | Claude | Ausarbeitung zum vollständigen Implementierungsplan: baustein-orientierte Gliederung (Überblick mit Klassendiagramm, Aktionen, Module, Konfiguration, PifosCaller, Prozess/IPC mit Sequenz- und Zustandsdiagramm, Logging, Ausnahmen); Empfehlungen in Festlegungen überführt, Sicherheitsanforderungen je Baustein eingearbeitet, Anforderungs-Rückverfolgung ergänzt; offene Entscheidung zu getter/setter (ÜBR-04) bei Martin belassen. |
 | 0.03 | 2026-06-27 | Claude | Attributzugriff festgelegt (ÜBR-04): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, interne Attribute ohne Zugriffsmethoden; abhängige Stellen in Überblick und Aktionen nachgezogen. Datenfluss-/Komponentendiagramm in Kapitel 1 ergänzt. |
 | 0.04 | 2026-06-27 | Claude | Konsistenzbefunde behoben: tomllib-Version korrigiert (seit 3.11), Verweis auf gelöschtes Diagramm-Dokument entfernt, benannte Lesemethoden aus Klassendiagramm gestrichen, Inhaltsverzeichnis ohne Listen-Markup, resume_module im Zustandsdiagramm ergänzt; durchgängig Instanzvariable statt Klassenvariable; Stilkorrekturen (Vollsatz-Klammer aufgelöst, bildhafte Sprache ersetzt, „prüfen gegen" zu „auf … prüfen", Kapitelverweise mit Namen). |
+| 0.05 | 2026-06-27 | Claude | Anforderungskennungen aus dem Fließtext gelöst (Aussage selbsterklärend, Kennung nur als Klammerzusatz am Satzende); Klassendiagramm auf die vier Kern-Basisklassen und ihre zentralen Beziehungen reduziert, Diagramm-Einleitung und nachgelagerte Formatklassen-Passage angepasst. |
