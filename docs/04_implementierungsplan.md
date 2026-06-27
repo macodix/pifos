@@ -4,7 +4,7 @@
 
 Dieser Plan legt fest, wie jeder Baustein von pifos in Python umgesetzt wird. Er verfeinert das Konzept (`docs/01_konzept.md`) und die Anforderungen (`docs/02_anforderungen.md`) zum WIE und hält die Bedingungen der Machbarkeit (`docs/03_machbarkeit.md`) ein. Das WAS wird nicht wiederholt. Die eingebetteten Diagramme stammen aus `docs/diagramme.md`. Auslieferung und Ablageort regelt `docs/05_bereitstellung.md`; sie sind nicht Gegenstand dieses Plans.
 
-Die Sicherheitsanforderungen aus Kapitel 13 der Anforderungen sind in die Bausteine eingearbeitet, an der Stelle ihrer Umsetzung. Wo eine Festlegung eine Anforderung erfüllt, steht deren Kürzel in Klammern am Satzende. Code-Bezeichner sind englisch, Fließtext deutsch. Punkte mit echter Wahl ohne fachlichen Standard stehen als Unterabschnitt „Offene Entscheidung" am Ende des betroffenen Kapitels.
+Die Sicherheitsanforderungen aus Kapitel 13 der Anforderungen sind in die Bausteine eingearbeitet, an der Stelle ihrer Umsetzung. Wo eine Festlegung eine Anforderung erfüllt, steht deren Kürzel in Klammern am Satzende. Code-Bezeichner sind englisch, Fließtext deutsch. Alle Festlegungen sind getroffen; offene Wahlpunkte bestehen nicht mehr.
 
 ## Inhaltsverzeichnis
 
@@ -42,7 +42,7 @@ Die Aufteilung der Aktionen in ein eigenes Paket trennt den wachsenden Satz konk
 
 Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition (`Module` hält Aktionsinstanzen) und steuert sie über deren Parameter und Klassenvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
 
-Das folgende Klassendiagramm zeigt die drei Bausteine, ihre Basisklassen und Beziehungen. Konkrete Aktionen und Module erben von ihrer Basisklasse; ein konkreter Aufrufer wie der Installer erbt von `PifosCaller`. Abstrakte Methoden sind kursiv. Alle Klassenvariablen tragen laut ÜBR-04 Lese- und Schreibmethoden, im Diagramm aus Übersicht nicht je Variable ausgeführt.
+Das folgende Klassendiagramm zeigt die drei Bausteine, ihre Basisklassen und Beziehungen. Konkrete Aktionen und Module erben von ihrer Basisklasse; ein konkreter Aufrufer wie der Installer erbt von `PifosCaller`. Abstrakte Methoden sind kursiv. Die öffentlichen Attribute sind laut ÜBR-04 direkt zugänglich; die im Diagramm benannten Lesemethoden wie `get_status()` zeigen den Zugriff beispielhaft und sind nach der Festlegung in Abschnitt 1.4 kein vorgeschriebener Weg.
 
 ```mermaid
 classDiagram
@@ -152,6 +152,35 @@ classDiagram
 
 Das Diagramm zeigt `to_dict()` als Lesemethode der Formatklassen; den Schreibweg ergänzt Kapitel 4 (Konfiguration). Die Formatklasse `TomlConfig` liest mit `tomllib`; ihr Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und folgt der Festlegung in `docs/05_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat").
 
+Während das Klassendiagramm die Struktur zeigt, zeigt das folgende Datenflussdiagramm das Zusammenwirken zur Laufzeit und den Datenfluss. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet darüber Modulprozesse und führt als einziger das Logfile. Aktionen erfassen Status und Ausgaben, das Modul reicht ausgewählte Meldungen per IPC nach oben, und nur der Aufrufer schreibt das Logfile (LOG-01, LOG-02).
+
+```mermaid
+flowchart TB
+    src[("Konfigurationsquelle<br>ini / toml / json")]
+    log[(Logfile)]
+
+    subgraph caller[Aufrufer z. B. LsbInstaller]
+        ui[Oberflaeche + Fachlogik]
+        base["PifosCaller<br>IPC + Logger"]
+    end
+
+    subgraph modproc[Modulprozess]
+        mod[Module]
+        act1[Action]
+        act2[Action]
+    end
+
+    src -->|liest ueber Config| base
+    base -->|Config-Objekt + Befehle via IPC| mod
+    mod -->|Meldungen, Ergebnisse via IPC| base
+    ui --- base
+    mod -->|steuert / Komposition| act1
+    mod --> act2
+    act1 -->|Status, stdout, stderr| mod
+    act2 -->|Status, stdout, stderr| mod
+    base -->|schreibt| log
+```
+
 ### 1.3 Übergreifende Vorkehrungen
 
 Drei Festlegungen gelten für alle Bausteine.
@@ -160,19 +189,17 @@ Jeder Baustein wählt die einfachste ausreichende Umsetzung; zusätzliche Vererb
 
 Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen Rechten; erhöhte Rechte werden nur dort und nur so lange wie nötig eingesetzt (SIC-10, SIC-11). Die Einzelheiten stehen bei den Modulen (Kapitel 3) und dem Aufrufer (Kapitel 5).
 
-Jede Klassenvariable erhält eine Lese- und eine Schreibmethode (ÜBR-04). Der Mechanismus ist umstritten und in der Offenen Entscheidung dieses Kapitels behandelt; bis zur Klärung gilt die dort empfohlene vorläufige Umsetzung.
+Öffentliche Attribute sind direkt zugänglich; Zugriffslogik über `@property` kommt nur dort hinzu, wo der Zugriff eine Prüfung oder Berechnung braucht (ÜBR-04). Abschnitt 1.4 führt das aus.
 
-### 1.4 Offene Entscheidung — Mechanismus und Umfang von getter/setter
+### 1.4 Attributzugriff
 
-ÜBR-04 fordert für jede Klassenvariable eine Lese- und eine Schreibmethode, ÜBR-03 zugleich die einfachste ausreichende Lösung. Beides steht in Spannung, sowohl beim Mechanismus als auch beim Geltungsumfang.
+ÜBR-04 verlangt einen geregelten Zugriff auf die Attribute, ÜBR-03 zugleich die einfachste ausreichende Lösung. Beides erfüllt der pythonische Weg über direkten Attributzugriff.
 
-Beim Mechanismus stehen drei Wege zur Wahl. Von Hand geschriebene `get_x()`/`set_x()` je Variable sind explizit, erzeugen aber viel gleichförmigen Code. `@property` je Variable ist pythonidiomatisch und um Prüfungen erweiterbar, wiederholt sich aber bei rein durchreichenden Variablen. Generische `get(name)`/`set(name, value)` in den Basisklassen `Action`, `Module`, `Config` und `PifosCaller` erfüllen ÜBR-04 für jede Variable mit minimalem Code, sind aber kein je Variable benannter Zugriff.
+Der Normalfall ist der direkte Zugriff auf ein öffentliches Attribut: `obj.x` zum Lesen und Schreiben. Flächendeckende `get_x()`/`set_x()`-Methoden entfallen; sie wären un-idiomatischer Boilerplate ohne Mehrwert (ÜBR-03).
 
-Beim Geltungsumfang lässt „jede Klassenvariable" offen, ob auch interne Hilfsvariablen erfasst sind oder nur die Variablen der öffentlichen Schnittstelle. Eine Begrenzung auf die öffentliche Schnittstelle ist eine einschränkende Festlegung und nach der „Für KI"-Vorgabe des Konzepts (Kapitel 2) Martin vorbehalten.
+`@property` kommt nur dort zum Einsatz, wo der Zugriff Logik braucht — eine Prüfung beim Setzen oder ein berechneter Wert beim Lesen. Die Nutzung bleibt dabei `obj.x`; die Schnittstelle ändert sich nicht, wenn ein Attribut später eine Prüfung erhält.
 
-Vorläufige Umsetzung bis zur Klärung: generische `get`/`set` in den Basisklassen, ergänzt um `@property` dort, wo eine Variable beim Setzen eine Prüfung braucht. Das erfüllt ÜBR-04 wörtlich und bleibt KISS-konform.
-
-**Entscheidung durch Martin offen.** Genügt der generische `get`/`set`-Zugriff, oder sind je Variable benannte Accessoren gewünscht, und gilt die Pflicht für alle Variablen oder nur für die öffentliche Schnittstelle.
+Die Regelung gilt für die öffentliche Schnittstelle, also Attribute ohne führenden Unterstrich. Interne Attribute mit führendem Unterstrich (`_name`) bleiben direkt und ohne Zugriffsmethoden.
 
 ## 2. Aktionen
 
@@ -191,11 +218,11 @@ Eine Aktion erledigt genau eine atomare Aufgabe und stellt deren Ausführung und
 | `safe_mode` | `bool` | bei dateiändernden Aktionen: Sicherung vor der Änderung |
 | `backup_location` | `str \| None` | Zielverzeichnis der Sicherung (AKT-07) |
 
-Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Lesemethoden `get_status()`, `get_stdout()`, `get_stderr()` und `get_returncode()` geben die Werte an das Modul (AKT-02); der getter/setter-Mechanismus folgt der Festlegung in Kapitel 1 (Offene Entscheidung).
+Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Das Modul liest diese Werte direkt als öffentliche Attribute, etwa `action.status` oder `action.stdout` (AKT-02); benannte Lesemethoden entfallen nach der Festlegung in Abschnitt 1.4 (Attributzugriff). Braucht ein Attribut beim Lesen oder Setzen Logik, kapselt eine `@property` sie, ohne die Zugriffsschreibweise `action.x` zu ändern.
 
 Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.3). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
 
-Optionen passen eine Aktion an Bedingungen ihrer Ausführung an, ohne ihren atomaren Charakter zu verändern (AKT-04). Sie werden als Konstruktorargumente oder über setter gesetzt, nicht durch zusätzliche Aufgaben in `run`.
+Optionen passen eine Aktion an Bedingungen ihrer Ausführung an, ohne ihren atomaren Charakter zu verändern (AKT-04). Sie werden als Konstruktorargumente übergeben oder als Attribut gesetzt, nicht durch zusätzliche Aufgaben in `run`.
 
 ### 2.2 Systembefehl-Aktion SysCmdAction
 
@@ -495,3 +522,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6) und einen Eingri
 |---------|-------|-----|----------|
 | 0.01 | 2026-06-27 | Claude | Erstanlage als Rohmaterial: 18 WIE-Themen mit Optionen und Empfehlung. |
 | 0.02 | 2026-06-27 | Claude | Ausarbeitung zum vollständigen Implementierungsplan: baustein-orientierte Gliederung (Überblick mit Klassendiagramm, Aktionen, Module, Konfiguration, PifosCaller, Prozess/IPC mit Sequenz- und Zustandsdiagramm, Logging, Ausnahmen); Empfehlungen in Festlegungen überführt, Sicherheitsanforderungen je Baustein eingearbeitet, Anforderungs-Rückverfolgung ergänzt; offene Entscheidung zu getter/setter (ÜBR-04) bei Martin belassen. |
+| 0.03 | 2026-06-27 | Claude | Attributzugriff festgelegt (ÜBR-04): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, interne Attribute ohne Zugriffsmethoden; abhängige Stellen in Überblick und Aktionen nachgezogen. Datenfluss-/Komponentendiagramm in Kapitel 1 ergänzt. |
