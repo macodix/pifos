@@ -117,6 +117,34 @@ Die Regelung gilt für die öffentliche Schnittstelle, also Attribute ohne führ
 
 Eine Aktion erledigt genau eine atomare Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul bereit (AKT-01, AKT-02). Alle Aktionen leiten von der abstrakten Basisklasse `Action` ab, die das gemeinsame Grundset an Variablen und Methoden festlegt (AKT-05). Dieses Kapitel beschreibt die Basisklasse, die generische Systembefehl-Aktion mit ihrer sicheren Ausführung und die Sicherung dateiändernder Aktionen im safe-mode.
 
+Das folgende Klassendiagramm zeigt die Basisklasse `Action` mit ihren Attributen und die beiden konkreten Aktionen, die von ihr erben.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Action {
+        <<abstract>>
+        +status
+        +stdout
+        +stderr
+        +returncode
+        +safe_mode
+        +backup_location
+        +run()*
+    }
+    class CopyFileAction {
+        +run()
+    }
+    class SysCmdAction {
+        +command
+        +run()
+    }
+
+    Action <|-- CopyFileAction
+    Action <|-- SysCmdAction
+```
+
 ### 2.1 Basisklasse Action
 
 `Action` ist eine abstrakte Basisklasse (`abc.ABC`) in `action.py`. Sie hält den Ausführungszustand in Instanzvariablen und schreibt jeder konkreten Aktion eine `run`-Methode vor.
@@ -171,6 +199,36 @@ Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hi
 
 Ein Modul erledigt eine Aufgabe über Aktionen, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Systemverändernde Module erben von der Zwischenklasse `SystemChangingModule`, die den Überprüfungsmodus und den Rollback vorschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt beide Basisklassen, die deklarative Konfiguration und ihre Prüfung sowie den Rechtekontext.
 
+Das folgende Klassendiagramm zeigt die Basisklasse `Module`, die abstrakte Zwischenklasse `SystemChangingModule` mit einem konkreten Modul sowie die Komposition mit `Action`.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Module {
+        <<abstract>>
+        +CONFIG : list~ConfigItem~
+        +loglevel
+        +start()*
+        +check_config()
+        +run_action()
+        +control_action()
+        +send_message()
+        +receive_message()
+    }
+    class SystemChangingModule {
+        <<abstract>>
+        +check()*
+        +rollback()*
+    }
+    class InstModule
+    class Action
+
+    Module <|-- SystemChangingModule
+    SystemChangingModule <|-- InstModule
+    Module o-- "0..*" Action : Komposition
+```
+
 ### 3.1 Basisklasse Module
 
 `Module` ist eine abstrakte Basisklasse in `module.py`. Sie stellt das gemeinsame Grundset bereit: Zugriff auf die Systemumgebung, das Ausführen und Steuern von Aktionen sowie die Interaktion mit dem aufrufenden Prozess (MOD-05).
@@ -215,6 +273,44 @@ Die genaue Mechanik der Undo-Registratur und das Umkehrverhalten je Aktion häng
 ## 4. Konfiguration
 
 Die Konfiguration ist die Schnittstelle zwischen Anwender und pifos. Die Klasse `Config` entkoppelt die Aufrufer vom Quellformat; je Quellformat überführt eine eigene Formatklasse die Konfiguration in ein dict (KFG-01, KFG-04). Einzelne Einträge beschreibt die dataclass `ConfigItem` (KFG-03). Dieses Kapitel beschreibt das Config-Objekt, die Formatklassen mit Lese- und Schreibweg, `ConfigItem` mit dem Prüffeld und die Absicherung des Ladens.
+
+Das folgende Klassendiagramm zeigt die Klasse `Config`, die je Quellformat zuliefernden Formatklassen und die dataclass `ConfigItem`.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Config {
+        +get_value()
+        +get_section()
+        +get_list()
+        +load_dict()
+        +load_raw()
+        +check_pattern()
+    }
+    class ConfigItem {
+        <<dataclass>>
+        +name
+        +required
+        +default
+        +check
+        +description
+    }
+    class IniConfig {
+        +to_dict()
+    }
+    class TomlConfig {
+        +to_dict()
+    }
+    class JsonConfig {
+        +to_dict()
+    }
+
+    Config ..> ConfigItem : nutzt
+    Config <-- IniConfig : liefert dict/raw
+    Config <-- TomlConfig : liefert dict/raw
+    Config <-- JsonConfig : liefert dict/raw
+```
 
 ### 4.1 Config-Objekt
 
@@ -266,6 +362,31 @@ Beim Einlesen von Konfigurationsquellen sind Pfad, Format und Größe zu kontrol
 ## 5. Aufrufer-Basisklasse PifosCaller
 
 pifos stellt die abstrakte Basisklasse `PifosCaller` in `pifos_caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6.
+
+Das folgende Klassendiagramm zeigt die Basisklasse `PifosCaller` und einen konkreten Aufrufer, der von ihr erbt.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class PifosCaller {
+        <<abstract>>
+        +loglevel
+        +start_module()
+        +stop_module()
+        +resume_module()
+        +terminate_module()
+        +send_command()
+        +receive_result()
+        +write_log()
+    }
+    class LsbInstaller {
+        +ui
+        +run()
+    }
+
+    PifosCaller <|-- LsbInstaller
+```
 
 ### 5.1 Methoden der Basisklasse
 
@@ -437,3 +558,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.03 | 2026-06-27 | Claude | Attributzugriff festgelegt (ÜBR-04): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, interne Attribute ohne Zugriffsmethoden; abhängige Stellen in Überblick und Aktionen nachgezogen. Datenfluss-/Komponentendiagramm in Kapitel 1 ergänzt. |
 | 0.04 | 2026-06-27 | Claude | Konsistenzbefunde behoben: tomllib-Version korrigiert (seit 3.11), Verweis auf gelöschtes Diagramm-Dokument entfernt, benannte Lesemethoden aus Klassendiagramm gestrichen, Inhaltsverzeichnis ohne Listen-Markup, resume_module im Zustandsdiagramm ergänzt; durchgängig Instanzvariable statt Klassenvariable; Stilkorrekturen (Vollsatz-Klammer aufgelöst, bildhafte Sprache ersetzt, „prüfen gegen" zu „auf … prüfen", Kapitelverweise mit Namen). |
 | 0.05 | 2026-06-27 | Claude | Anforderungskennungen aus dem Fließtext gelöst (Aussage selbsterklärend, Kennung nur als Klammerzusatz am Satzende); Klassendiagramm auf die vier Kern-Basisklassen und ihre zentralen Beziehungen reduziert, Diagramm-Einleitung und nachgelagerte Formatklassen-Passage angepasst. |
+| 0.06 | 2026-06-27 | Claude | Je ein fokussiertes Klassendiagramm in den Bausteinkapiteln Aktionen, Module, Konfiguration und Aufrufer ergänzt; zeigen die Detailstruktur des jeweiligen Bausteins passend zum Kapiteltext. |
