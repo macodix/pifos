@@ -2,7 +2,9 @@
 
 **Status:** [in Bearbeitung] · **Stand:** 2026-06-27
 
-Dieser Plan beschreibt die Umsetzung von pifos auf Grundlagen der Dokumente `docs/01_konzept.md`, `docs/02_anforderungen.md` und `docs/03_machbarkeit.md`.
+Dieser Plan beschreibt die Umsetzung von *pifos* auf Grundlage der Dokumente `docs/01_konzept.md`, `docs/02_anforderungen.md` und `docs/03_machbarkeit.md`.
+
+Die Kennungen in Klammern (etwa ÜBR-01, SIC-03) verweisen auf die Anforderungen in `docs/02_anforderungen.md`.
 
 Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen `docs/02_anforderungen.md` 
 
@@ -19,9 +21,9 @@ Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen `do
 
 ## 1. Überblick und Architektur
 
-*pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zur leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01 `docs/02_anforderungen.md`). 
+*pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zur leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01). 
 
-Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. pifos bildet ein umschließendes Paket `pifos/` mit kurzen Modulnamen; mehrteilige Bausteine liegen in Unterpaketen.
+Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. *pifos* bildet ein umschließendes Paket `pifos/` mit kurzen Modulnamen; mehrteilige Bausteine liegen in Unterpaketen.
 
 | Modul in `pifos/` | Inhalt |
 |---|---|
@@ -107,7 +109,7 @@ Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen R
 
 Der Zugriff auf die Attribute soll geregelt und zugleich so einfach wie möglich sein; beides erfüllt der pythonische Weg über direkten Attributzugriff (ÜBR-03, ÜBR-04).
 
-Der Normalfall ist der direkte Zugriff auf ein öffentliches Attribut: `obj.x` zum Lesen und Schreiben. Flächendeckende `get_x()`/`set_x()`-Methoden entfallen; sie wären un-idiomatischer Boilerplate ohne Mehrwert (ÜBR-03).
+Der Normalfall ist der direkte Zugriff auf ein öffentliches Attribut: `obj.x` zum Lesen und Schreiben. Flächendeckende `get_x()`/`set_x()`-Methoden entfallen; sie wären unidiomatischer, gleichförmiger Code ohne Mehrwert (ÜBR-03).
 
 `@property` kommt nur dort zum Einsatz, wo der Zugriff Logik braucht — eine Prüfung beim Setzen oder ein berechneter Wert beim Lesen. Die Nutzung bleibt dabei `obj.x`; die Schnittstelle ändert sich nicht, wenn ein Attribut später eine Prüfung erhält.
 
@@ -115,7 +117,7 @@ Die Regelung gilt für die öffentliche Schnittstelle, also Attribute ohne führ
 
 ## 2. Aktionen
 
-Eine Aktion erledigt genau eine atomare Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul bereit (AKT-01, AKT-02). Alle Aktionen leiten von der abstrakten Basisklasse `Action` ab, die das gemeinsame Grundset an Variablen und Methoden festlegt (AKT-05). Dieses Kapitel beschreibt die Basisklasse, die generische Systembefehl-Aktion mit ihrer sicheren Ausführung und die Sicherung dateiändernder Aktionen im safe-mode.
+Eine *Aktion* erledigt genau eine atomare Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul bereit (AKT-01, AKT-02). Alle Aktionen leiten von der abstrakten Basisklasse `Action` ab, die das gemeinsame Grundset an Variablen und Methoden festlegt (AKT-05). Dieses Kapitel beschreibt die Basisklasse, die generische Systembefehl-Aktion mit ihrer sicheren Ausführung und die Sicherung dateiändernder Aktionen im safe-mode.
 
 Das folgende Klassendiagramm zeigt die Basisklasse `Action` mit ihren Attributen und die beiden konkreten Aktionen, die von ihr erben.
 
@@ -197,7 +199,7 @@ Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hi
 
 ## 3. Module
 
-Ein Modul erledigt eine Aufgabe über Aktionen, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Systemverändernde Module erben von der Zwischenklasse `SystemChangingModule`, die den Überprüfungsmodus und den Rollback vorschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt beide Basisklassen, die deklarative Konfiguration und ihre Prüfung sowie den Rechtekontext.
+Ein *Modul* erledigt eine Aufgabe über *Aktionen*, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Systemverändernde Module erben von der Zwischenklasse `SystemChangingModule`, die den Überprüfungsmodus und den Rollback vorschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt beide Basisklassen, die deklarative Konfiguration und ihre Prüfung sowie den Rechtekontext.
 
 Das folgende Klassendiagramm zeigt die Basisklasse `Module`, die abstrakte Zwischenklasse `SystemChangingModule` mit einem konkreten Modul sowie die Komposition mit `Action`.
 
@@ -272,7 +274,7 @@ Die genaue Mechanik der Undo-Registratur und das Umkehrverhalten je Aktion häng
 
 ## 4. Konfiguration
 
-Die Konfiguration ist die Schnittstelle zwischen Anwender und pifos. Die Klasse `Config` entkoppelt die Aufrufer vom Quellformat; je Quellformat überführt eine eigene Formatklasse die Konfiguration in ein dict (KFG-01, KFG-04). Einzelne Einträge beschreibt die dataclass `ConfigItem` (KFG-03). Dieses Kapitel beschreibt das Config-Objekt, die Formatklassen mit Lese- und Schreibweg, `ConfigItem` mit dem Prüffeld und die Absicherung des Ladens.
+Die *Konfiguration* ist die Schnittstelle zwischen Anwender und *pifos*. Die Klasse `Config` entkoppelt die Aufrufer vom Quellformat; je Quellformat überführt eine eigene Formatklasse die Konfiguration in ein dict (KFG-01, KFG-04). Einzelne Einträge beschreibt die dataclass `ConfigItem` (KFG-03). Dieses Kapitel beschreibt das Config-Objekt, die Formatklassen mit Lese- und Schreibweg, `ConfigItem` mit dem Prüffeld und die Absicherung des Ladens.
 
 Das folgende Klassendiagramm zeigt die Klasse `Config`, die je Quellformat zuliefernden Formatklassen und die dataclass `ConfigItem`.
 
@@ -361,7 +363,7 @@ Beim Einlesen von Konfigurationsquellen sind Pfad, Format und Größe zu kontrol
 
 ## 5. Aufrufer-Basisklasse PifosCaller
 
-pifos stellt die abstrakte Basisklasse `PifosCaller` in `caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6 „Prozessmodell, Steuerung und IPC".
+*pifos* stellt die abstrakte Basisklasse `PifosCaller` in `caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6 „Prozessmodell, Steuerung und IPC".
 
 Das folgende Klassendiagramm zeigt die Basisklasse `PifosCaller` und einen konkreten Aufrufer, der von ihr erbt.
 
@@ -418,7 +420,7 @@ Die Basisklasse liefert diese als Leer- oder Standardmethoden; ein konkreter Auf
 
 ### 5.3 Rechtekontext
 
-`PifosCaller` startet die Modulprozesse und bestimmt deren Rechtekontext. Der Aufrufer läuft mit den geringsten zur Aufgabe nötigen Rechten und gibt einem Modulprozess nur die Rechte, die dessen Aufgabe verlangt (SIC-10, SIC-11). Der pifos-Kern liegt als nur lesbarer Code-Baum vor, dessen Eigentümer root ist und der für Dienstkonten nicht schreibbar ist (SIC-12); die Einrichtung dieses Code-Baums regelt `docs/05_bereitstellung.md` (Kapitel „Ablageort nach FHS").
+`PifosCaller` startet die Modulprozesse und bestimmt deren Rechtekontext. Der Aufrufer läuft mit den geringsten zur Aufgabe nötigen Rechten und gibt einem Modulprozess nur die Rechte, die dessen Aufgabe verlangt (SIC-10, SIC-11). Der *pifos*-Kern liegt als nur lesbarer Code-Baum vor, dessen Eigentümer root ist und der für Dienstkonten nicht schreibbar ist (SIC-12); die Einrichtung dieses Code-Baums regelt `docs/05_bereitstellung.md` (Kapitel „Ablageort nach FHS").
 
 ## 6. Prozessmodell, Steuerung und IPC
 
@@ -428,7 +430,7 @@ Ein Modul ist eine Python-Klasse, wird zur Ausführung aber zu einem eigenen, st
 
 Jedes Modul läuft in einem eigenen Betriebssystem-Prozess über `multiprocessing.Process`. Das deckt den Rückgabewert (STR-05), die sequenzielle und parallele Führung (STR-06) und die Steuerung (CAL-02) mit Bordmitteln ab. Ein eigener Prozess trägt einen eigenen Exitcode, ist über Signale anhaltbar und beendbar und ist gegenüber dem Aufrufer isoliert, was die CRITICAL-Selbstbeendigung eines Moduls absichert (EXC-03).
 
-Die Startmethode ist `spawn`: Sie ist deterministisch und frei von den Sperr-Risiken, die `fork` bei einem mehrfädigen Aufrufer mit Rich-Oberfläche hätte. Voraussetzung ist, dass Modulklasse und `Config`-Objekt picklebar bleiben, also keine offenen Datei- oder Socket-Handles als Instanzvariablen halten (Bedingung B3 der Machbarkeit). `subprocess` mit eigenem Launcher-Skript ist nicht gewählt, weil es mehr Eigenbau verlangt und Module laut Konzept Python-Klassen sind; `threading` nicht, weil es keinen eigenen Exitcode, kein Anhalten über Signale und keine Isolation bei CRITICAL-Beendigung böte.
+Die Startmethode ist `spawn`: Sie ist deterministisch und frei von den Sperr-Risiken, die `fork` bei einem mehrfädigen Aufrufer mit Rich-Oberfläche hätte. Voraussetzung ist, dass Modulklasse und `Config`-Objekt picklebar bleiben, also keine offenen Datei- oder Socket-Handles als Instanzvariablen halten (Bedingung B3 der Machbarkeit). `subprocess` mit eigenem Startskript ist nicht gewählt, weil es mehr Eigenbau verlangt und Module laut Konzept Python-Klassen sind; `threading` nicht, weil es keinen eigenen Exitcode, kein Anhalten über Signale und keine Isolation bei CRITICAL-Beendigung böte.
 
 Das `Config`-Objekt übergibt der Aufrufer als Startargument von `multiprocessing.Process`; multiprocessing pickelt es in den Kindprozess (STR-02). Ein zusätzlicher Datei-Umweg entfällt, weil `Config` seine Daten als einfache Strukturen hält und damit picklebar ist (Bedingung B3). Module ohne Konfiguration erhalten kein Argument (MOD-03).
 
@@ -436,7 +438,7 @@ Das `Config`-Objekt übergibt der Aufrufer als Startargument von `multiprocessin
 
 Je Modulprozess besteht eine duplexe `multiprocessing.Pipe` zwischen Aufrufer und Modul (STR-01). Der Aufrufer schreibt Befehle hinab, das Modul schreibt Meldungen, Ergebnisse und Ausnahmen hinauf (STR-03, STR-04). Mehrere parallele Module multiplext der Aufrufer mit `multiprocessing.connection.wait()` über ihre Verbindungen (STR-06).
 
-Die Pipe stellt synchron zu, ohne Hintergrund-Thread; eine Meldung erreicht den Aufrufer damit verlässlich vor dem Prozessende. Das erfüllt die CRITICAL-Zustellung (EXC-03) ohne Sonderbehandlung. `multiprocessing.Queue` ist nicht gewählt. Ihr Hintergrund-Feeder-Thread müsste vor dem Prozessende geleert werden, sonst gehen Meldungen verloren, was die garantierte Zustellung bei CRITICAL-Beendigung gefährdet (EXC-03). Ein Unix-Domain-Socket oder TCP ist nicht gewählt, weil er für den rein lokalen Python-zu-Python-Fall mehr Eigenbau verlangt (ÜBR-03).
+Die Pipe stellt synchron zu, ohne Hintergrund-Thread; eine Meldung erreicht den Aufrufer damit verlässlich vor dem Prozessende. Das erfüllt die CRITICAL-Zustellung (EXC-03) ohne Sonderbehandlung. `multiprocessing.Queue` ist nicht gewählt. Ihr interner Hintergrund-Thread müsste vor dem Prozessende geleert werden, sonst gehen Meldungen verloren, was die garantierte Zustellung bei CRITICAL-Beendigung gefährdet (EXC-03). Ein Unix-Domain-Socket oder TCP ist nicht gewählt, weil er für den rein lokalen Python-zu-Python-Fall mehr Eigenbau verlangt (ÜBR-03).
 
 Die IPC erfolgt ausschließlich lokal zwischen Aufrufer und Modulprozess, nicht über Netz (SIC-07). Über IPC werden nur Daten innerhalb der Vertrauensdomäne des Aufrufers ausgetauscht, der seine eigenen Module startet; aus nicht vertrauenswürdiger Quelle wird nichts deserialisiert (SIC-08). Die übertragenen Nutzdaten beschränken sich auf einfache Datentypen; ausführbare oder zustandsbehaftete Objekte werden nicht übertragen (SIC-09).
 
@@ -535,7 +537,7 @@ Aktionen und Module erzeugen im Fehlerfall Ausnahmen; Module leiten sie an den A
 
 ### 8.1 Ausnahmehierarchie
 
-pifos führt eine schlanke Ausnahmehierarchie in `errors.py`. `PifosError` ist die gemeinsame Basisklasse; davon leiten `ActionError`, `ModuleError` und `ConfigError` ab. Aktionen erzeugen bei einem Fehler `ActionError`, Module `ModuleError`, die Konfigurationsprüfung `ConfigError` (EXC-01). Innerhalb eines Prozesses gibt eine Aktion ihre Ausnahme an das aufrufende Modul weiter (AKT-03); das ist die native Exception-Weitergabe der Sprache.
+*pifos* führt eine schlanke Ausnahmehierarchie in `errors.py`. `PifosError` ist die gemeinsame Basisklasse; davon leiten `ActionError`, `ModuleError` und `ConfigError` ab. Aktionen erzeugen bei einem Fehler `ActionError`, Module `ModuleError`, die Konfigurationsprüfung `ConfigError` (EXC-01). Innerhalb eines Prozesses gibt eine Aktion ihre Ausnahme an das aufrufende Modul weiter (AKT-03); das ist die native Exception-Weitergabe der Sprache.
 
 ### 8.2 Weiterleitung über die Prozessgrenze
 
@@ -561,3 +563,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.06 | 2026-06-27 | Claude | Je ein fokussiertes Klassendiagramm in den Bausteinkapiteln Aktionen, Module, Konfiguration und Aufrufer ergänzt; zeigen die Detailstruktur des jeweiligen Bausteins passend zum Kapiteltext. |
 | 0.07 | 2026-06-28 | Claude | Drei Kapitelverweise ohne Namen ergänzt (Kapitel 13 „Sicherheit" der Anforderungen, Kapitel 3 „Module", Kapitel 6 „Prozessmodell, Steuerung und IPC"). |
 | 0.08 | 2026-06-28 | Claude | Kapitel 1 umgebaut: Datei-Tabelle auf umschließendes Paket `pifos/` mit Unterpaketen `actions/` und `config/` umgestellt, Module umbenannt (`pifos_caller.py`→`caller.py`, `config.py`→`config/`, `exceptions.py`→`errors.py`); Tabelle in die Kapiteleinleitung gezogen, Abschnitt 1.1 aufgelöst, Folgeabschnitte zu 1.1–1.3 aufgerückt; alle Abschnitts- und Dateibezüge nachgezogen, Tippfehler korrigiert. |
+| 0.09 | 2026-06-28 | Claude | Stilabgleich: *pifos* und die Bausteinbegriffe an ihren Konzeptnennungen kursiv gesetzt; einmaligen Hinweis ergänzt, dass die Klammer-Kennungen auf die Anforderungen verweisen, und die Dateiangabe an der Einzelkennung gekürzt; Anglizismen ersetzt (Boilerplate, Launcher-Skript, Feeder-Thread) und kleinere Grammatik geglättet. |
