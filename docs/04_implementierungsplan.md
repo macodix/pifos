@@ -2,9 +2,9 @@
 
 **Status:** [in Bearbeitung] · **Stand:** 2026-06-27
 
-Dieser Plan legt fest, wie jeder Baustein von pifos in Python umgesetzt wird. Er verfeinert das Konzept (`docs/01_konzept.md`) und die Anforderungen (`docs/02_anforderungen.md`) zum WIE und hält die Bedingungen der Machbarkeit (`docs/03_machbarkeit.md`) ein. Das WAS wird nicht wiederholt. Klassen-, Datenfluss-, Sequenz- und Zustandsdiagramm sind in die jeweiligen Kapitel eingebettet. Auslieferung und Ablageort regelt `docs/05_bereitstellung.md`; sie sind nicht Gegenstand dieses Plans.
+Dieser Plan beschreibt die Umsetzung von pifos auf Grundlagen der Dokumente `docs/01_konzept.md`, `docs/02_anforderungen.md` und `docs/03_machbarkeit.md`.
 
-Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen sind in die Bausteine eingearbeitet, an der Stelle ihrer Umsetzung. Wo eine Festlegung eine Anforderung erfüllt, steht deren Kürzel in Klammern am Satzende. Code-Bezeichner sind englisch, Fließtext deutsch. Alle Festlegungen sind getroffen; offene Wahlpunkte bestehen nicht mehr.
+Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen `docs/02_anforderungen.md` 
 
 ## Inhaltsverzeichnis
 
@@ -19,11 +19,11 @@ Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen sin
 
 ## 1. Überblick und Architektur
 
-pifos besteht aus drei Bausteinen — Aktionen, Module und Konfiguration — sowie der Aufrufer-Basisklasse und der Prozess-/IPC-Schicht, die sie verbinden (ÜBR-01). Dieses Kapitel ordnet die Klassen den Dateien zu, beschreibt ihr Zusammenwirken zur Laufzeit und legt die übergreifenden Vorkehrungen fest, die für alle Bausteine gelten. Die Detailfestlegungen je Baustein folgen in den Kapiteln 2 bis 8.
+*pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zu leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01 `docs/02_anforderungen.md`). 
 
 ### 1.1 Klassen und Dateien
 
-Jeder Baustein liegt in einer eigenen Datei mit klarer Verantwortung. Die im Konzept gesetzten Dateinamen `config.py` und `pifos_caller.py` bleiben unverändert; die übrigen sind danach benannt.
+Jede der grundlegenden Komponenten wird durch eine Python-Klasse jeweils einer Datei repräsnetiert. Die im Konzept genutzten Dateinamen `config.py` und `pifos_caller.py` wurden übernommen. 
 
 | Datei | Inhalt |
 |-------|--------|
@@ -39,6 +39,8 @@ Jeder Baustein liegt in einer eigenen Datei mit klarer Verantwortung. Die im Kon
 Die Aufteilung der Aktionen in ein eigenes Paket trennt den wachsenden Satz konkreter Aktionen von der stabilen Basisklasse. Die Formatklassen liegen neben `Config` in `config.py`, weil sie nur dort genutzt werden und das Konzept `ConfigItem` und `Config` derselben Datei zuweist.
 
 ### 1.2 Zusammenwirken
+
+Aufrufende Scrippte sollten ein Klasse beinhalten, welche von `PifosCaller` in `pifos_caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Ntztung von *pifos* einschl. der IPC-Funktionalizä zur Verfügung.  
 
 Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition, indem `Module` Aktionsinstanzen hält, und steuert sie über deren Parameter und Instanzvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
 
