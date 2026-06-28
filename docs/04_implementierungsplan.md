@@ -65,7 +65,7 @@ classDiagram
     PifosCaller ..> Module : startet/steuert via IPC
 ```
 
-Während das Klassendiagramm die Struktur zeigt, zeigt das folgende Datenflussdiagramm das Zusammenwirken zur Laufzeit und den Datenfluss. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet darüber Modulprozesse und führt als einziger das Logfile. Aktionen erfassen Status und Ausgaben, das Modul reicht ausgewählte Meldungen per IPC nach oben, und nur der Aufrufer schreibt das Logfile (LOG-01, LOG-02).
+Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet dModulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben, das Modul reicht ausgewählte Meldungen per IPC nach oben, und nur der Aufrufer schreibt das Logfile (LOG-01, LOG-02).
 
 ```mermaid
 flowchart TB
