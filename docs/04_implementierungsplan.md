@@ -19,28 +19,26 @@ Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen `do
 
 ## 1. Überblick und Architektur
 
-*pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zu leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01 `docs/02_anforderungen.md`). 
+*pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zur leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01 `docs/02_anforderungen.md`). 
 
-### 1.1 Klassen und Dateien
+Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. pifos bildet ein umschließendes Paket `pifos/` mit kurzen Modulnamen; mehrteilige Bausteine liegen in Unterpaketen.
 
-Jede der grundlegenden Komponenten wird durch eine Python-Klasse jeweils einer Datei repräsnetiert. Die im Konzept genutzten Dateinamen `config.py` und `pifos_caller.py` wurden übernommen. 
-
-| Datei | Inhalt |
-|-------|--------|
+| Modul in `pifos/` | Inhalt |
+|---|---|
 | `action.py` | abstrakte Basisklasse `Action` |
-| `actions/` (Paket) | konkrete Aktionen, u. a. `SysCmdAction`, `CopyFileAction` |
-| `module.py` | abstrakte Basisklassen `Module` und `SystemChangingModule` |
-| `config.py` | `Config`, `ConfigItem`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
-| `pifos_caller.py` | abstrakte Basisklasse `PifosCaller` |
-| `ipc.py` | `IpcMessage`, Enums `MessageKind` und `LogLevel` |
-| `runner.py` | Einsprungfunktion `module_runner` des Modulprozesses |
-| `exceptions.py` | Ausnahmehierarchie `PifosError` und Ableitungen |
+| `actions/` (Unterpaket) | generische Aktionen, u. a. `SysCmdAction`, `CopyFileAction` |
+| `module.py` | abstrakte Basisklassen `Module`, `SystemChangingModule` |
+| `config/` (Unterpaket) | `Config`, `ConfigItem`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
+| `caller.py` | abstrakte Basisklasse `PifosCaller` |
+| `ipc.py` | `IpcMessage`, Enums `MessageKind`, `LogLevel` |
+| `runner.py` | Einsprungfunktion des Modulprozesses |
+| `errors.py` | Ausnahmehierarchie `PifosError` und Ableitungen |
 
-Die Aufteilung der Aktionen in ein eigenes Paket trennt den wachsenden Satz konkreter Aktionen von der stabilen Basisklasse. Die Formatklassen liegen neben `Config` in `config.py`, weil sie nur dort genutzt werden und das Konzept `ConfigItem` und `Config` derselben Datei zuweist.
+Die Aufteilung der Aktionen in das Unterpaket `actions/` trennt den wachsenden Satz konkreter Aktionen von der stabilen Basisklasse. Die Formatklassen liegen mit `Config` und `ConfigItem` im Unterpaket `config/`, weil sie nur dort genutzt werden.
 
-### 1.2 Zusammenwirken
+### 1.1 Zusammenwirken
 
-Aufrufende Scrippte sollten ein Klasse beinhalten, welche von `PifosCaller` in `pifos_caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Ntztung von *pifos* einschl. der IPC-Funktionalizä zur Verfügung.  
+Aufrufende Skripte sollten eine Klasse beinhalten, welche von `PifosCaller` in `caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Nutzung von *pifos* einschl. der IPC-Funktionalität zur Verfügung.  
 
 Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition, indem `Module` Aktionsinstanzen hält, und steuert sie über deren Parameter und Instanzvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
 
@@ -95,7 +93,7 @@ flowchart TB
     base -->|schreibt| log
 ```
 
-### 1.3 Übergreifende Vorkehrungen
+### 1.2 Übergreifende Vorkehrungen
 
 Drei Festlegungen gelten für alle Bausteine.
 
@@ -103,9 +101,9 @@ Jeder Baustein wählt die einfachste ausreichende Umsetzung; zusätzliche Vererb
 
 Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen Rechten; erhöhte Rechte werden nur dort und nur so lange wie nötig eingesetzt (SIC-10, SIC-11). Die Einzelheiten stehen bei den Modulen (Kapitel 3 „Module") und dem Aufrufer (Kapitel 5 „Aufrufer-Basisklasse PifosCaller").
 
-Öffentliche Attribute sind direkt zugänglich; Zugriffslogik über `@property` kommt nur dort hinzu, wo der Zugriff eine Prüfung oder Berechnung braucht (ÜBR-04). Abschnitt 1.4 führt das aus.
+Öffentliche Attribute sind direkt zugänglich; Zugriffslogik über `@property` kommt nur dort hinzu, wo der Zugriff eine Prüfung oder Berechnung braucht (ÜBR-04). Abschnitt 1.3 führt das aus.
 
-### 1.4 Attributzugriff
+### 1.3 Attributzugriff
 
 Der Zugriff auf die Attribute soll geregelt und zugleich so einfach wie möglich sein; beides erfüllt der pythonische Weg über direkten Attributzugriff (ÜBR-03, ÜBR-04).
 
@@ -160,7 +158,7 @@ classDiagram
 | `safe_mode` | `bool` | bei dateiändernden Aktionen: Sicherung vor der Änderung |
 | `backup_location` | `str \| None` | Zielverzeichnis der Sicherung (AKT-07) |
 
-Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Das Modul liest diese Werte direkt als öffentliche Attribute, etwa `action.status` oder `action.stdout` (AKT-02); benannte Lesemethoden entfallen nach der Festlegung in Abschnitt 1.4 (Attributzugriff). Braucht ein Attribut beim Lesen oder Setzen Logik, kapselt eine `@property` sie, ohne die Zugriffsschreibweise `action.x` zu ändern.
+Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Das Modul liest diese Werte direkt als öffentliche Attribute, etwa `action.status` oder `action.stdout` (AKT-02); benannte Lesemethoden entfallen nach der Festlegung in Abschnitt 1.3 (Attributzugriff). Braucht ein Attribut beim Lesen oder Setzen Logik, kapselt eine `@property` sie, ohne die Zugriffsschreibweise `action.x` zu ändern.
 
 Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen"), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.3). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
 
@@ -316,7 +314,7 @@ classDiagram
 
 ### 4.1 Config-Objekt
 
-`Config` in `config.py` ist die zentrale Schnittstelle zwischen Konfigurationen und Aufrufern (KFG-01). Sie hält die Konfiguration intern als einfache Strukturen (dict, list), damit sie über die Prozessgrenze an einen Modulprozess übergeben werden kann (Kapitel 6 „Prozessmodell, Steuerung und IPC", Bedingung B3 der Machbarkeit).
+`Config` im Unterpaket `config/` ist die zentrale Schnittstelle zwischen Konfigurationen und Aufrufern (KFG-01). Sie hält die Konfiguration intern als einfache Strukturen (dict, list), damit sie über die Prozessgrenze an einen Modulprozess übergeben werden kann (Kapitel 6 „Prozessmodell, Steuerung und IPC", Bedingung B3 der Machbarkeit).
 
 | Methode | Zweck |
 |---------|-------|
@@ -345,7 +343,7 @@ ini ist das primäre Format, weil es mit Bordmitteln liest und schreibt, von Han
 
 ### 4.3 ConfigItem
 
-`ConfigItem` ist eine dataclass in `config.py` (KFG-03). Sie beschreibt einen einzelnen Konfigurationseintrag und dient zugleich der Deklaration in `CONFIG` der Module (MOD-08).
+`ConfigItem` ist eine dataclass im Unterpaket `config/` (KFG-03). Sie beschreibt einen einzelnen Konfigurationseintrag und dient zugleich der Deklaration in `CONFIG` der Module (MOD-08).
 
 | Feld | Typ | Bedeutung |
 |------|-----|-----------|
@@ -363,7 +361,7 @@ Beim Einlesen von Konfigurationsquellen sind Pfad, Format und Größe zu kontrol
 
 ## 5. Aufrufer-Basisklasse PifosCaller
 
-pifos stellt die abstrakte Basisklasse `PifosCaller` in `pifos_caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6 „Prozessmodell, Steuerung und IPC".
+pifos stellt die abstrakte Basisklasse `PifosCaller` in `caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6 „Prozessmodell, Steuerung und IPC".
 
 Das folgende Klassendiagramm zeigt die Basisklasse `PifosCaller` und einen konkreten Aufrufer, der von ihr erbt.
 
@@ -537,7 +535,7 @@ Aktionen und Module erzeugen im Fehlerfall Ausnahmen; Module leiten sie an den A
 
 ### 8.1 Ausnahmehierarchie
 
-pifos führt eine schlanke Ausnahmehierarchie in `exceptions.py`. `PifosError` ist die gemeinsame Basisklasse; davon leiten `ActionError`, `ModuleError` und `ConfigError` ab. Aktionen erzeugen bei einem Fehler `ActionError`, Module `ModuleError`, die Konfigurationsprüfung `ConfigError` (EXC-01). Innerhalb eines Prozesses gibt eine Aktion ihre Ausnahme an das aufrufende Modul weiter (AKT-03); das ist die native Exception-Weitergabe der Sprache.
+pifos führt eine schlanke Ausnahmehierarchie in `errors.py`. `PifosError` ist die gemeinsame Basisklasse; davon leiten `ActionError`, `ModuleError` und `ConfigError` ab. Aktionen erzeugen bei einem Fehler `ActionError`, Module `ModuleError`, die Konfigurationsprüfung `ConfigError` (EXC-01). Innerhalb eines Prozesses gibt eine Aktion ihre Ausnahme an das aufrufende Modul weiter (AKT-03); das ist die native Exception-Weitergabe der Sprache.
 
 ### 8.2 Weiterleitung über die Prozessgrenze
 
@@ -562,3 +560,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.05 | 2026-06-27 | macodix | Anforderungskennungen aus dem Fließtext gelöst (Aussage selbsterklärend, Kennung nur als Klammerzusatz am Satzende); Klassendiagramm auf die vier Kern-Basisklassen und ihre zentralen Beziehungen reduziert, Diagramm-Einleitung und nachgelagerte Formatklassen-Passage angepasst. |
 | 0.06 | 2026-06-27 | macodix | Je ein fokussiertes Klassendiagramm in den Bausteinkapiteln Aktionen, Module, Konfiguration und Aufrufer ergänzt; zeigen die Detailstruktur des jeweiligen Bausteins passend zum Kapiteltext. |
 | 0.07 | 2026-06-28 | macodix | Drei Kapitelverweise ohne Namen ergänzt (Kapitel 13 „Sicherheit" der Anforderungen, Kapitel 3 „Module", Kapitel 6 „Prozessmodell, Steuerung und IPC"). |
+| 0.08 | 2026-06-28 | macodix | Kapitel 1 umgebaut: Datei-Tabelle auf umschließendes Paket `pifos/` mit Unterpaketen `actions/` und `config/` umgestellt, Module umbenannt (`pifos_caller.py`→`caller.py`, `config.py`→`config/`, `exceptions.py`→`errors.py`); Tabelle in die Kapiteleinleitung gezogen, Abschnitt 1.1 aufgelöst, Folgeabschnitte zu 1.1–1.3 aufgerückt; alle Abschnitts- und Dateibezüge nachgezogen, Tippfehler korrigiert. |
