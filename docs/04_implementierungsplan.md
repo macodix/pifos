@@ -23,7 +23,7 @@ Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen `do
 
 *pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zur leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01). 
 
-Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. *pifos* bildet ein umschließendes Paket `pifos/` mit kurzen Modulnamen; mehrteilige Bausteine liegen in Unterpaketen.
+Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. *pifos* wir als Python-Paket `pifos/` mit kurzen Modulnamen zur verfügung gestellt. *Aktionen* und *Konfigurationen* werden in den Unterpaketen `actions/` und `config/` abgelegt.
 
 | Modul in `pifos/` | Inhalt |
 |---|---|
@@ -36,15 +36,14 @@ Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert.
 | `runner.py` | Einsprungfunktion des Modulprozesses |
 | `errors.py` | Ausnahmehierarchie `PifosError` und Ableitungen |
 
-Die Aufteilung der Aktionen in das Unterpaket `actions/` trennt den wachsenden Satz konkreter Aktionen von der stabilen Basisklasse. Die Formatklassen liegen mit `Config` und `ConfigItem` im Unterpaket `config/`, weil sie nur dort genutzt werden.
 
 ### 1.1 Zusammenwirken
 
 Aufrufende Skripte sollten eine Klasse beinhalten, welche von `PifosCaller` in `caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Nutzung von *pifos* einschl. der IPC-Funktionalität zur Verfügung.  
 
-Ein Aufrufer erbt von `PifosCaller`, beschafft die Konfiguration als `Config`-Objekt und startet damit ein Modul als eigenen Prozess (STR-01, STR-02). Das Modul nutzt Aktionen über Komposition, indem `Module` Aktionsinstanzen hält, und steuert sie über deren Parameter und Instanzvariablen (MOD-01, MOD-06). Aktionen erfassen Status, stdout und stderr und stellen sie dem Modul bereit (AKT-02). Das Modul reicht ausgewählte Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer; nur der Aufrufer führt das Logfile (LOG-01, LOG-02).
+Der Aufrufer instanziiert ein Config-Objekt mit einem spezfischen Konfigformat (z. B. 'ini', 'toml', 'json' usw.) und startet ein oder mehrere Module jeweils als eigenen Prozess (STR-01, STR-02). Dabei werden die erforderlichen Config-Daten als Config-Objet an das Modul übergeben. Ein Modul wiederum hat eine oder mehrere Aktionen (Komposition) und steuert diese über Parameter und Instanzvariablen (MOD-1, MOD-06).  Das Modul leitet Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer. Die Führung des Logfiles ist Sache des Aufrufers (LOG-01, LOG-02).
 
-Das folgende Klassendiagramm zeigt die Grundstruktur: die vier Kern-Basisklassen und ihre zentralen Beziehungen. Ein Modul nutzt Aktionen über Komposition und erhält beim Start ein `Config`-Objekt; der Aufrufer startet und steuert Module über IPC. Die Abstraktheit der drei Basisklassen ist mit `<<abstract>>` angedeutet. Konkrete Unterklassen, die Formatklassen, `ConfigItem` und die vollständigen Methodenlisten stehen im Text der Kapitel 2 bis 5; das Diagramm doppelt sie nicht.
+Ein Beispiel für eine konkrete Action-Klasse und Formatklasse, sowie weitere Hilfsklassen und vollständige Methodenlisten für die abstrakten Klassen werden in den nachfolgenden Kapiteln (*2. Aktionen*, *3. Module* und *4. Konfiguration*) beschrieben.
 
 ```mermaid
 classDiagram
