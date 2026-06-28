@@ -4,7 +4,7 @@
 
 Dieser Plan legt fest, wie jeder Baustein von pifos in Python umgesetzt wird. Er verfeinert das Konzept (`docs/01_konzept.md`) und die Anforderungen (`docs/02_anforderungen.md`) zum WIE und hält die Bedingungen der Machbarkeit (`docs/03_machbarkeit.md`) ein. Das WAS wird nicht wiederholt. Klassen-, Datenfluss-, Sequenz- und Zustandsdiagramm sind in die jeweiligen Kapitel eingebettet. Auslieferung und Ablageort regelt `docs/05_bereitstellung.md`; sie sind nicht Gegenstand dieses Plans.
 
-Die Sicherheitsanforderungen aus Kapitel 13 der Anforderungen sind in die Bausteine eingearbeitet, an der Stelle ihrer Umsetzung. Wo eine Festlegung eine Anforderung erfüllt, steht deren Kürzel in Klammern am Satzende. Code-Bezeichner sind englisch, Fließtext deutsch. Alle Festlegungen sind getroffen; offene Wahlpunkte bestehen nicht mehr.
+Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen sind in die Bausteine eingearbeitet, an der Stelle ihrer Umsetzung. Wo eine Festlegung eine Anforderung erfüllt, steht deren Kürzel in Klammern am Satzende. Code-Bezeichner sind englisch, Fließtext deutsch. Alle Festlegungen sind getroffen; offene Wahlpunkte bestehen nicht mehr.
 
 ## Inhaltsverzeichnis
 
@@ -193,7 +193,7 @@ Die Sicherung ist sicherheitsrelevant und unterliegt drei Vorkehrungen. Die Zugr
 
 ### 2.4 Vertagtes Detail
 
-Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hinaus entsteht mit den ersten Modulen, die sie benötigen. Eine Aufzählung vorab wäre Spekulation ohne Bedarf (ÜBR-05). Das Umkehrverhalten je dateiändernder Aktion für die Undo-Registratur ist in Kapitel 3 behandelt.
+Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hinaus entsteht mit den ersten Modulen, die sie benötigen. Eine Aufzählung vorab wäre Spekulation ohne Bedarf (ÜBR-05). Das Umkehrverhalten je dateiändernder Aktion für die Undo-Registratur ist in Kapitel 3 „Module" behandelt.
 
 ## 3. Module
 
@@ -361,7 +361,7 @@ Beim Einlesen von Konfigurationsquellen sind Pfad, Format und Größe zu kontrol
 
 ## 5. Aufrufer-Basisklasse PifosCaller
 
-pifos stellt die abstrakte Basisklasse `PifosCaller` in `pifos_caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6.
+pifos stellt die abstrakte Basisklasse `PifosCaller` in `pifos_caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6 „Prozessmodell, Steuerung und IPC".
 
 Das folgende Klassendiagramm zeigt die Basisklasse `PifosCaller` und einen konkreten Aufrufer, der von ihr erbt.
 
@@ -559,3 +559,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.04 | 2026-06-27 | Claude | Konsistenzbefunde behoben: tomllib-Version korrigiert (seit 3.11), Verweis auf gelöschtes Diagramm-Dokument entfernt, benannte Lesemethoden aus Klassendiagramm gestrichen, Inhaltsverzeichnis ohne Listen-Markup, resume_module im Zustandsdiagramm ergänzt; durchgängig Instanzvariable statt Klassenvariable; Stilkorrekturen (Vollsatz-Klammer aufgelöst, bildhafte Sprache ersetzt, „prüfen gegen" zu „auf … prüfen", Kapitelverweise mit Namen). |
 | 0.05 | 2026-06-27 | Claude | Anforderungskennungen aus dem Fließtext gelöst (Aussage selbsterklärend, Kennung nur als Klammerzusatz am Satzende); Klassendiagramm auf die vier Kern-Basisklassen und ihre zentralen Beziehungen reduziert, Diagramm-Einleitung und nachgelagerte Formatklassen-Passage angepasst. |
 | 0.06 | 2026-06-27 | Claude | Je ein fokussiertes Klassendiagramm in den Bausteinkapiteln Aktionen, Module, Konfiguration und Aufrufer ergänzt; zeigen die Detailstruktur des jeweiligen Bausteins passend zum Kapiteltext. |
+| 0.07 | 2026-06-28 | Claude | Drei Kapitelverweise ohne Namen ergänzt (Kapitel 13 „Sicherheit" der Anforderungen, Kapitel 3 „Module", Kapitel 6 „Prozessmodell, Steuerung und IPC"). |
