@@ -169,7 +169,7 @@ classDiagram
 
 ### 3.1 Basisklasse Module
 
-`Module` ist eine abstrakte Basisklasse in `module.py`. Sie stellt das gemeinsame Grundset bereit: Zugriff auf die Systemumgebung, das Ausführen und Steuern von Aktionen sowie die Interaktion mit dem aufrufenden Prozess (MOD-05).
+`Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt das gemeinsame Grundset bereit: Zugriff auf die Systemumgebung, das Ausführen und Steuern von Aktionen sowie die Interaktion mit dem aufrufenden Prozess (MOD-05).
 
 Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfiguration (MOD-08); leer bei Modulen ohne Konfiguration (MOD-03). Die Instanzvariable `loglevel` trägt das vom Aufrufer übergebene Loglevel (LOG-05). Die geprüften Konfigurationswerte legt das Modul in eigenen Instanzvariablen ab (MOD-04).
 
