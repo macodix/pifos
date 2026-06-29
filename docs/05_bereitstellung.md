@@ -65,7 +65,7 @@ pifos soll unabhängig vom Installer nutzbar sein und wird als selbstständiges 
 
 Innerhalb von `/opt/pifos/` spiegelt der Baum die Repo-Struktur aus `konv-scripting-python.md` (Kapitel „Projektstruktur"): `bin/` für Einstiegspunkte, `usr/lib/pifos/` für den Modulcode des Kerns samt dem Verzeichnis der gebündelten Bibliotheken. Damit gilt das in der Konvention geforderte Spiegeln von Repo- und Deployment-Struktur auch hier, nur unter einem eigenen Wurzelverzeichnis.
 
-**Rechte und Eigentümer.** Der pifos-Kern ist ein nur lesbarer Code-Baum: Eigentümer `root`, für Dienstkonten lesbar, nicht schreibbar (geringste Rechte, BSI-Grundschutz). Der Kern selbst braucht keine beschreibbaren Pfade. Laufzeitdaten — Logdateien führt der Aufrufer (LOG-01), Konfigurationsdateien legt der Konfigurator an einem vom Aufrufer bestimmten Ort ab (KOR-07) — gehören dem jeweiligen Aufrufer und liegen außerhalb des Kern-Baums.
+**Rechte und Eigentümer.** Der pifos-Kern ist ein nur lesbarer Code-Baum: Eigentümer `root`, für Dienstkonten lesbar, nicht schreibbar (SIC-12; geringste Rechte nach BSI-Grundschutz). Der Kern selbst braucht keine beschreibbaren Pfade. Laufzeitdaten — Logdateien führt der Aufrufer (LOG-01), Konfigurationsdateien legt der Konfigurator an einem vom Aufrufer bestimmten Ort ab (KOR-07) — gehören dem jeweiligen Aufrufer und liegen außerhalb des Kern-Baums.
 
 ## 4. Python-Mindestversion 3.13
 
@@ -105,5 +105,6 @@ toml-Schreiben ist optional und wird erst aktiviert, wenn ein Aufrufer es brauch
 | 0.01 | 2026-06-27 | Claude | Erstanlage: Auslieferung des Kerns (vendoring), Ablageort `/opt/pifos` nach FHS, Konsequenzen der Mindestversion 3.13, Schreibweg je Konfigurationsformat. |
 | 0.02 | 2026-06-27 | Claude | Konsistenz: Inhaltsverzeichnis und Kapiteleinleitung (Kapitel 2) ergänzt; falschen Python-Versionskonflikt entfernt (Regeltext der Konvention nennt 3.13), Kapitel „Hinweis an den Hauptchat" gestrichen. |
 | 0.03 | 2026-06-27 | Claude | Umsetzungshinweis ergänzt: Voranstellen des Importpfads ist beim Aufrufer-Einstiegspunkt zu implementieren (einziger Berührungspunkt Bereitstellung/Code). |
+| 0.04 | 2026-06-29 | Claude | SIC-12 (nur lesbarer Code-Baum) am Absatz „Rechte und Eigentümer" als Anforderungsbezug ergänzt; trägt damit die im Implementierungsplan aufgelöste Aussage. |
 </content>
 </invoke>

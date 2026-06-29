@@ -264,6 +264,8 @@ pifos wird mit den nötigen Bibliotheken ausgeliefert, damit auf dem Zielserver 
 
 pifos läuft auf einem gehärteten Linux-Server, führt Systembefehle aus und startet getrennte Prozesse über IPC. Die folgenden Anforderungen sichern Architektur und Bausteine ab. Grundlage ist `konv-scripting.md` mit der Python-Konkretisierung `konv-scripting-python.md`; der BSI IT-Grundschutz gilt als Mindeststandard.
 
+Die Nummern SIC-10 und SIC-11 sind nicht vergeben; sie bezeichneten Prozessrechte-Anforderungen, die gestrichen wurden, weil pifos als Bausatz keine eigenen Prozessrechte hat. Die übrigen Nummern bleiben unverändert.
+
 ### 13.1 Eingabevalidierung an der Verwendungsstelle
 
 Das Config-Objekt prüft Inhalte bewusst nicht (KFG-08). Werte, die sicherheitskritisch verwendet werden — als Argument eines Systembefehls oder als Dateipfad —, werden daher dort geprüft, wo sie so verwendet werden.
@@ -363,5 +365,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.05 | 2026-06-27 | Claude | ÜBR-04 neu gefasst (Entscheidung Martin): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, keine flächendeckenden getter/setter. |
 | 0.06 | 2026-06-27 | Claude | Begriff korrigiert: MOD-04, MOD-06, MOD-09 von Klassenvariablen auf Instanzvariablen; SIC-01 „gegen … geprüft" zu „auf … anhand einer Positivliste geprüft". |
 | 0.07 | 2026-06-29 | Claude | Rechte-Anforderungen korrigiert: SIC-10 und SIC-11 (Prozessrechte) gestrichen, da pifos als Bausatz keine eigenen Prozessrechte hat; Kapitel 13.4 auf den Code-Baum (SIC-12) fokussiert; neue SIC-27 (Logfile mit engen Rechten 0600) ergänzt. SIC-10/11 bleiben als Lücke unbesetzt. |
+| 0.08 | 2026-06-29 | Claude | Hinweis in der Einleitung von Kapitel 13 ergänzt: SIC-10 und SIC-11 sind nicht vergeben (gestrichene Prozessrechte-Anforderungen). |
 </content>
 </invoke>
