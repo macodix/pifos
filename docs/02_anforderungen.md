@@ -85,8 +85,8 @@ Aktionen, die Dateien verändern, müssen den Zustand vor dem Eingriff sichern k
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
-| AKT-06 | MUSS | Für Aktionen, die Dateien ändern, überschreiben oder löschen, ist ein safe-mode aktivierbar, der die Datei vor der Änderung sichert. |
-| AKT-07 | MUSS | Der Ort der Sicherung im safe-mode ist als Variable oder Parameter einstellbar. |
+| AKT-06 | MUSS | Für Aktionen, die Dateien ändern, überschreiben oder löschen, ist ein safe-mode zu implemetieren, der die Datei vor der Änderung sichert oder vor Überschreiben ohne explizite Aufforderung (z. B. --force Schalter) schützt. |
+| AKT-07 | MUSS | Wird nach AKT-06 eine Dateisicherung implementiert muss der Ort der Sicherung Parameter einstellbar sein. |
 
 ### 4.3 Systembefehle
 
