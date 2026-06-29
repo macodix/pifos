@@ -65,7 +65,7 @@ classDiagram
     PifosCaller ..> Module : startet/steuert via IPC
 ```
 
-Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet dModulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben der ausgeführten Befehele. Das Modul liest den Satus aus den Instanzvariablen der Aktionen und erstellt daraus Meldungen ie per IPC an den Aufrufer weitergelietet werden. Der Aufrufer verarbeitet die Meldungen, trifft anahnd diese Meldungen ggf. Entscheidungen und schreibt eine Logdatei (LOG-01, LOG-02).
+Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet dModulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben der ausgeführten Befehele. Das Modul liest den Satus aus den Instanzvariablen der Aktionen und erstellt daraus Meldungen ie per IPC an den Aufrufer weitergelietet werden. Der Aufrufer verarbeitet die Meldungen, trifft anhand diese Meldungen ggf. Entscheidungen und schreibt eine Logdatei (LOG-01, LOG-02).
 
 ```mermaid
 flowchart TB
@@ -94,25 +94,16 @@ flowchart TB
     base -->|schreibt| log
 ```
 
-### 1.2 Rahmen-Empfehlung zur Code-Gestaltung
+### 1.2 Empfehlung zur Code-Gestaltung
 
-Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. COnfig-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
+Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. Config-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
 
-Öffentliche Attribute sind direkt zugänglich; Zugriffslogik über `@property` kommt nur dort hinzu, wo der Zugriff eine Prüfung oder Berechnung braucht (ÜBR-04). Abschnitt 1.3 führt das aus.
+Öffentliche Attribute sind i. d. R direkt über `x.obj` zugänglich, *getter* und *setter* (`get_x()`/`set_x()`) werden nicht genutzt. Ein Zugriff über `@property` kann beo Bedarf genutzt werden (ÜBR-04).
 
-### 1.3 Attributzugriff
-
-Der Zugriff auf die Attribute soll geregelt und zugleich so einfach wie möglich sein; beides erfüllt der pythonische Weg über direkten Attributzugriff (ÜBR-03, ÜBR-04).
-
-Der Normalfall ist der direkte Zugriff auf ein öffentliches Attribut: `obj.x` zum Lesen und Schreiben. Flächendeckende `get_x()`/`set_x()`-Methoden entfallen; sie wären unidiomatischer, gleichförmiger Code ohne Mehrwert (ÜBR-03).
-
-`@property` kommt nur dort zum Einsatz, wo der Zugriff Logik braucht — eine Prüfung beim Setzen oder ein berechneter Wert beim Lesen. Die Nutzung bleibt dabei `obj.x`; die Schnittstelle ändert sich nicht, wenn ein Attribut später eine Prüfung erhält.
-
-Die Regelung gilt für die öffentliche Schnittstelle, also Attribute ohne führenden Unterstrich. Interne Attribute mit führendem Unterstrich (`_name`) bleiben direkt und ohne Zugriffsmethoden.
 
 ## 2. Aktionen
 
-Eine *Aktion* erledigt genau eine atomare Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul bereit (AKT-01, AKT-02). Alle Aktionen leiten von der abstrakten Basisklasse `Action` ab, die das gemeinsame Grundset an Variablen und Methoden festlegt (AKT-05). Dieses Kapitel beschreibt die Basisklasse, die generische Systembefehl-Aktion mit ihrer sicheren Ausführung und die Sicherung dateiändernder Aktionen im safe-mode.
+Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul zur Verfügung (AKT-01, AKT-02). Alle Aktionen leiten von der abstrakten Basisklasse `Action` ab, die gemeinsame Variablen und Methoden festlegt (AKT-05). Dieses Kapitel beschreibt die Basisklasse
 
 Das folgende Klassendiagramm zeigt die Basisklasse `Action` mit ihren Attributen und die beiden konkreten Aktionen, die von ihr erben.
 
