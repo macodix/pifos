@@ -150,6 +150,8 @@ classDiagram
         +check_config()
         +run_action()
         +control_action()
+        +resolve_action()
+        +check_action_params()
         +send_message()
         +receive_message()
         +check()
@@ -174,12 +176,16 @@ Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfigu
 | `check_config(self, config: Config) -> None` | prüft die Werte beim Start anhand `CONFIG` und legt sie ab (MOD-09) |
 | `run_action(self, action: Action) -> int` | führt eine Aktion aus und übernimmt deren Status (MOD-01) |
 | `control_action(self, action, **options) -> None` | steuert eine Aktion über Parameter oder Instanzvariablen (MOD-06) |
+| `resolve_action(self, name: str) -> type[Action]` | schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse; Fehler, wenn sie nicht existiert (MOD-05) |
+| `check_action_params(self, name: str, params: dict) -> None` | prüft die Parameter gegen die Deklaration der Aktion; eigenständig aufrufbar (MOD-05) |
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
 | `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
 | `rollback(self) -> None` | optional: nimmt die Eingriffe zurück; Default ohne Wirkung, ein Modul mit umkehrbarer Wirkung überschreibt sie (MOD-13) |
 
 `send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6 „Prozessmodell, Steuerung und IPC"); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
+
+`resolve_action` schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse oder meldet einen Fehler, wenn es sie nicht gibt; `check_action_params` prüft übergebene Parameter gegen die Deklaration der jeweiligen Aktion. Beide liegen in der Basisklasse, damit jedes Modul Aktionen einheitlich auflöst und prüft, statt diese Mechanik selbst zu wiederholen (MOD-05). Die Parameter-Prüfung ist eine eigene Methode und damit auch ohne vorheriges Auflösen nutzbar. Wie das Aktions-Verzeichnis gefüllt wird, hängt vom konkreten Aktionssatz ab und wird festgelegt, sobald dieser feststeht (ÜBR-05).
 
 ### 3.2 Konfigurationsdeklaration und Prüfung
 
@@ -493,3 +499,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.11 | 2026-06-29 | Claude | SIC-12 in die Bereitstellung übernommen, Abschnitt 5.3 „Code-Baum des Kerns" aufgelöst; „sowie den Rechtekontext" aus der Kapitel-3-Einleitung entfernt (Rückstand des entfernten Abschnitts 3.4). |
 | 0.12 | 2026-06-29 | Claude | SysCmdAction (Abschnitt 2.2) in das neue Dokument `05_standardkomponenten.md` ausgelagert; Folgeabschnitte auf 2.2 (safe-mode) und 2.3 (Vertagtes Detail) aufgerückt, Abschnittsbezug in 2.1 angepasst. |
 | 0.13 | 2026-06-29 | Claude | Zwischenklasse `SystemChangingModule` aufgelöst: `check` und `rollback` als optionale Methoden in die Basisklasse `Module` aufgenommen (`check(self) -> bool \| None`, Default `None`); Abschnitt 3.3 auf „Überprüfung und Rollback" umgestellt, Klassendiagramm, Kapiteleinleitung und Modul-Tabelle nachgezogen. |
+| 0.14 | 2026-06-29 | Claude | Zentrale Aktions-Auflösung in `Module` ergänzt: `resolve_action` (Existenz/Klasse aus dem Aktions-Verzeichnis) und getrennt `check_action_params` (Parameter gegen die Aktions-Deklaration); Mechanik einmal in der Basisklasse statt je Modul. Füllung des Verzeichnisses als Detail vertagt. |
