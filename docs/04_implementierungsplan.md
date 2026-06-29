@@ -65,7 +65,7 @@ classDiagram
     PifosCaller ..> Module : startet/steuert via IPC
 ```
 
-Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet dModulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben, das Modul reicht ausgewählte Meldungen per IPC nach oben, und nur der Aufrufer schreibt das Logfile (LOG-01, LOG-02).
+Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet dModulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben der ausgeführten Befehele. Das Modul liest den Satus aus den Instanzvariablen der Aktionen und erstellt daraus Meldungen ie per IPC an den Aufrufer weitergelietet werden. Der Aufrufer verarbeitet die Meldungen, trifft anahnd diese Meldungen ggf. Entscheidungen und schreibt eine Logdatei (LOG-01, LOG-02).
 
 ```mermaid
 flowchart TB
@@ -94,11 +94,9 @@ flowchart TB
     base -->|schreibt| log
 ```
 
-### 1.2 Übergreifende Vorkehrungen
+### 1.2 Rahmen-Empfehlung zur Code-Gestaltung
 
-Drei Festlegungen gelten für alle Bausteine.
-
-Jeder Baustein wählt die einfachste ausreichende Umsetzung; zusätzliche Vererbungsebenen, Formate oder Optionen entstehen erst bei konkretem Bedarf (ÜBR-03, ÜBR-05).
+Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. COnfig-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
 
 Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen Rechten; erhöhte Rechte werden nur dort und nur so lange wie nötig eingesetzt (SIC-10, SIC-11). Die Einzelheiten stehen bei den Modulen (Kapitel 3 „Module") und dem Aufrufer (Kapitel 5 „Aufrufer-Basisklasse PifosCaller").
 
