@@ -194,7 +194,7 @@ Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hi
 
 ## 3. Module
 
-Ein *Modul* erledigt eine Aufgabe über *Aktionen*, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Systemverändernde Module erben von der Zwischenklasse `SystemChangingModule`, die den Überprüfungsmodus und den Rollback vorschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt beide Basisklassen, die deklarative Konfiguration und ihre Prüfung sowie den Rechtekontext.
+Ein *Modul* erledigt eine Aufgabe über *Aktionen*, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Systemverändernde Module erben von der Zwischenklasse `SystemChangingModule`, die den Überprüfungsmodus und den Rollback vorschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt beide Basisklassen, die deklarative Konfiguration und ihre Prüfung.
 
 Das folgende Klassendiagramm zeigt die Basisklasse `Module`, die abstrakte Zwischenklasse `SystemChangingModule` mit einem konkreten Modul sowie die Komposition mit `Action`.
 
@@ -409,10 +409,6 @@ Nach Prozessende wertet `PifosCaller` den Rückgabewert aus: 0 bedeutet Erfolg, 
 
 Die Basisklasse liefert diese als Leer- oder Standardmethoden; ein konkreter Aufrufer überschreibt sie nach Bedarf (CAL-07). Der konkrete Aufrufer steuert darüber hinaus nur seine Fachlogik und Oberfläche bei (CAL-06).
 
-### 5.3 Code-Baum des Kerns
-
-Der *pifos*-Kern liegt als nur lesbarer Code-Baum vor, dessen Eigentümer root ist und der für Dienstkonten nicht schreibbar ist (SIC-12); die Einrichtung dieses Code-Baums regelt `docs/05_bereitstellung.md` (Kapitel „Ablageort nach FHS").
-
 ## 6. Prozessmodell, Steuerung und IPC
 
 Ein Modul ist eine Python-Klasse, wird zur Ausführung aber zu einem eigenen, steuerbaren Prozess. Dieses Kapitel legt das Prozessmodell, den IPC-Mechanismus, das Nachrichtenformat und die Hauptschleife des Modulprozesses fest und sichert die IPC ab. Es ist die technische Grundlage der Methoden aus Kapitel 5 (PifosCaller) und der Meldungswege aus Kapitel 3 (Module).
@@ -556,3 +552,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.08 | 2026-06-28 | macodix | Kapitel 1 umgebaut: Datei-Tabelle auf umschließendes Paket `pifos/` mit Unterpaketen `actions/` und `config/` umgestellt, Module umbenannt (`pifos_caller.py`→`caller.py`, `config.py`→`config/`, `exceptions.py`→`errors.py`); Tabelle in die Kapiteleinleitung gezogen, Abschnitt 1.1 aufgelöst, Folgeabschnitte zu 1.1–1.3 aufgerückt; alle Abschnitts- und Dateibezüge nachgezogen, Tippfehler korrigiert. |
 | 0.09 | 2026-06-28 | macodix | Stilabgleich: *pifos* und die Bausteinbegriffe an ihren Konzeptnennungen kursiv gesetzt; einmaligen Hinweis ergänzt, dass die Klammer-Kennungen auf die Anforderungen verweisen, und die Dateiangabe an der Einzelkennung gekürzt; Anglizismen ersetzt (Boilerplate, Launcher-Skript, Feeder-Thread) und kleinere Grammatik geglättet. |
 | 0.10 | 2026-06-29 | macodix | Falsche Prozessrechte-Aussagen (SIC-10/11) entfernt: Rechte-Absatz in 1.2 gestrichen, Abschnitt 3.4 „Rechtekontext" entfernt (Folgeabschnitt zu 3.4 aufgerückt), Abschnitt 5.3 auf die SIC-12-Aussage zum Code-Baum reduziert und passend benannt. Logfile-Rechte `0600` (SIC-27) in 7.2 ergänzt. |
+| 0.11 | 2026-06-29 | macodix | SIC-12 in die Bereitstellung übernommen, Abschnitt 5.3 „Code-Baum des Kerns" aufgelöst; „sowie den Rechtekontext" aus der Kapitel-3-Einleitung entfernt (Rückstand des entfernten Abschnitts 3.4). |
