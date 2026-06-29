@@ -37,7 +37,7 @@ Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert.
 | `errors.py` | Ausnahmehierarchie `PifosError` und Ableitungen |
 
 
-### 1.1 Zusammenwirken
+### 1.1. Zusammenwirken
 
 Aufrufende Skripte sollten eine Klasse beinhalten, welche von `PifosCaller` in `caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Nutzung von *pifos* einschl. der IPC-Funktionalität zur Verfügung.  
 
@@ -94,75 +94,43 @@ flowchart TB
     base -->|schreibt| log
 ```
 
-### 1.2 Empfehlung zur Code-Gestaltung
+### 1.2. Empfehlung zur Code-Gestaltung
 
 Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. Config-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
 
 Öffentliche Attribute sind i. d. R direkt über `x.obj` zugänglich, *getter* und *setter* (`get_x()`/`set_x()`) werden nicht genutzt. Ein Zugriff über `@property` kann beo Bedarf genutzt werden (ÜBR-04).
 
+Aktionen, die Dateien ändern, überschreiben oder löschen, müssen die Originaldatei vor sichern oder vor Überschreibn ohne explizite Aufforderung schützen (AKT-06).
+
 
 ## 2. Aktionen
 
-Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul zur Verfügung (AKT-01, AKT-02). Alle Aktionen leiten von der abstrakten Basisklasse `Action` ab, die gemeinsame Variablen und Methoden festlegt (AKT-05). Dieses Kapitel beschreibt die Basisklasse
+Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausgaben vollständig dem aufrufenden Modul zur Verfügung (AKT-01, AKT-02). Alle Aktionen leiten von der Basisklasse `Action` ab, die gemeinsame Variablen und Methoden festlegt (AKT-05).
 
-Das folgende Klassendiagramm zeigt die Basisklasse `Action` mit ihren Attributen und die beiden konkreten Aktionen, die von ihr erben.
-
-```mermaid
-classDiagram
-    direction LR
-
-    class Action {
-        <<abstract>>
-        +status
-        +stdout
-        +stderr
-        +returncode
-        +safe_mode
-        +backup_location
-        +run()*
-    }
-    class CopyFileAction {
-        +run()
-    }
-    class SysCmdAction {
-        +command
-        +run()
-    }
-
-    Action <|-- CopyFileAction
-    Action <|-- SysCmdAction
-```
 
 ### 2.1 Basisklasse Action
 
-`Action` ist eine abstrakte Basisklasse (`abc.ABC`) in `action.py`. Sie hält den Ausführungszustand in Instanzvariablen und schreibt jeder konkreten Aktion eine `run`-Methode vor.
+`Action` ist eine abstrakte Basisklasse (`action.Action`) in `action.py`. Sie hält den Ausführungszustand in Instanzvariablen und schreibt jeder konkreten Aktion eine `run`-Methode vor.
 
 | Variable | Typ | Bedeutung |
 |----------|-----|-----------|
-| `status` | `str` | Zustand der Ausführung (z. B. neu, läuft, fertig, fehlgeschlagen) |
-| `stdout` | `str` | Standardausgabe der Ausführung |
-| `stderr` | `str` | Fehlerausgabe der Ausführung |
-| `returncode` | `int \| None` | Rückgabewert, sofern die Aktion einen Befehl ausführt |
-| `safe_mode` | `bool` | bei dateiändernden Aktionen: Sicherung vor der Änderung |
-| `backup_location` | `str \| None` | Zielverzeichnis der Sicherung (AKT-07) |
+| `status` | `str` | Zustand der Ausführungm, *not_runnned*, *running*, *finished* oder *failed*, Default: *not_runnned* |
 
-Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Das Modul liest diese Werte direkt als öffentliche Attribute, etwa `action.status` oder `action.stdout` (AKT-02); benannte Lesemethoden entfallen nach der Festlegung in Abschnitt 1.3 (Attributzugriff). Braucht ein Attribut beim Lesen oder Setzen Logik, kapselt eine `@property` sie, ohne die Zugriffsschreibweise `action.x` zu ändern.
 
-Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen"), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.2). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
+| Methode | Rückgabewert | Bedeutung |
+| `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück) |
 
-Optionen passen eine Aktion an Bedingungen ihrer Ausführung an, ohne ihren atomaren Charakter zu verändern (AKT-04). Sie werden als Konstruktorargumente übergeben oder als Attribut gesetzt, nicht durch zusätzliche Aufgaben in `run`.
 
-### 2.2 Dateiändernde Aktionen und safe-mode
+### 2.1.1 Implementierung von Action
 
-Aktionen, die Dateien ändern, überschreiben oder löschen, bieten den aktivierbaren safe-mode, der die Datei vor der Änderung sichert (AKT-06). `CopyFileAction` ist ein erstes Beispiel; weitere entstehen bei Bedarf.
+Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgaeb enthalten.
 
-Ist `safe_mode` gesetzt, legt die Aktion vor der Änderung eine Kopie der Datei an. Standardziel ist derselbe Pfad mit einem Zeitstempel-Zusatz im Namen; das Ziel ist über `backup_location` auf ein anderes Verzeichnis umstellbar (AKT-07). Die Sicherung trägt sich in die Undo-Registratur des aufrufenden systemverändernden Moduls ein und dient damit zugleich dem Rollback (Kapitel 3 „Module").
+Die Methode `run(self) -> int` beinhaltet bei konkrete Implementlierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
 
-Die Sicherung ist sicherheitsrelevant und unterliegt drei Vorkehrungen. Die Zugriffsrechte der Sicherung gehen nicht über die der Originaldatei hinaus; die Kopie übernimmt deren Rechte und weitet sie nicht aus (SIC-13). `backup_location` wird vor der Nutzung als Pfad geprüft und auf das vorgesehene Verzeichnis begrenzt (SIC-14). Prüfung und Schreiben erfolgen so, dass Manipulation über symbolische Verweise und zeitliche Wettläufe zwischen Prüfung und Nutzung vermieden werden, etwa durch Öffnen ohne Folgen symbolischer Verweise und Schreiben über einen Dateideskriptor statt erneut über den Pfad (SIC-15).
+Die Ausführung der Aktion ist immer mit einer `try except`-Klausel zu versehen. Die Aktion darf niemals das gesamte Skript beenden! Im Fehlerfall wurd die `status`-variable auf *failed' gesetzt und eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen") erzeugt. Die Ausnahme-Behandlung wird an das aufrufende Modul weitergereicht. Dabei ist darauf zu achten, dass möglichst umfangreiche Informationen zur Verfügung gestellt werden um ggf. eine weitere Diagnostik durch das aufrufende Modul zu ermöglichen.
 
-### 2.3 Vertagtes Detail
+Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Klassenvariablen eingeführt und in der `run()`-Methode mit der vollständigen Ausgabe der entsprechenden Kanäle (capturing) gefüllt. Zusätzlich wird die Klassenvariable `returncode` genutzt um den Rückgabewert des Systembefehls abzulegen. Bei einem `returncode' ungleich '0' (Linux) eine `ActionError`-Ausnahme erzeugt und an das Modil übergeben.
 
-Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hinaus entsteht mit den ersten Modulen, die sie benötigen. Eine Aufzählung vorab wäre Spekulation ohne Bedarf (ÜBR-05). Das Umkehrverhalten je dateiändernder Aktion für die Undo-Registratur ist in Kapitel 3 „Module" behandelt.
 
 ## 3. Module
 
