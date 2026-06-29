@@ -55,13 +55,12 @@ Die Verbindlichkeit ist entweder MUSS (Pflicht) oder KANN (optional), entspreche
 
 Diese Anforderungen gelten für pifos als Ganzes, unabhängig vom einzelnen Baustein.
 
-Die Nummer ÜBR-04 ist nicht vergeben; sie bezeichnete eine Vorgabe zum Attributzugriff (direkter Zugriff gegenüber `@property`), die als reine Stilfrage gestrichen wurde — das Python-Idiom regelt sie beim Codieren.
-
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
 | ÜBR-01 | MUSS | pifos stellt die drei Bausteine Aktionen, Module und Konfiguration bereit. |
 | ÜBR-02 | MUSS | pifos ist von beliebigen Aufrufern nutzbar, nicht nur vom Installer. |
 | ÜBR-03 | MUSS | pifos erfüllt jede Anforderung mit der einfachsten dafür ausreichenden Lösung (KISS). |
+| ÜBR-04 | KANN | Öffentliche Attribute (ohne führenden Unterstrich) sind direkt zugänglich; auf flächendeckende getter-/setter-Methoden wird verzichtet. Zugriffslogik über `@property` kann bei Bedarf eingesetzt werden, wo der Zugriff eine Prüfung oder Berechnung erfordert. |
 | ÜBR-05 | MUSS | pifos enthält nur Funktionen, die das Konzept fordert; keine darüber hinausgehenden Festlegungen oder Funktionen. |
 
 ## 4. Aktionen
@@ -367,6 +366,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.06 | 2026-06-27 | Claude | Begriff korrigiert: MOD-04, MOD-06, MOD-09 von Klassenvariablen auf Instanzvariablen; SIC-01 „gegen … geprüft" zu „auf … anhand einer Positivliste geprüft". |
 | 0.07 | 2026-06-29 | Claude | Rechte-Anforderungen korrigiert: SIC-10 und SIC-11 (Prozessrechte) gestrichen, da pifos als Bausatz keine eigenen Prozessrechte hat; Kapitel 13.4 auf den Code-Baum (SIC-12) fokussiert; neue SIC-27 (Logfile mit engen Rechten 0600) ergänzt. SIC-10/11 bleiben als Lücke unbesetzt. |
 | 0.08 | 2026-06-29 | Claude | Hinweis in der Einleitung von Kapitel 13 ergänzt: SIC-10 und SIC-11 sind nicht vergeben (gestrichene Prozessrechte-Anforderungen). |
-| 0.09 | 2026-06-29 | Claude | ÜBR-04 (Attributzugriff direkter Zugriff/`@property`) gestrichen — reine Stilfrage, keine Anforderung; Nummer bleibt unbesetzt, Hinweis in der Einleitung von Kapitel 3 ergänzt. |
+| 0.09 | 2026-06-29 | Claude | ÜBR-04 (Attributzugriff) von MUSS auf KANN herabgestuft und als Empfehlung gefasst — direkter Zugriff, `@property` optional bei Prüfung/Berechnung; Attributzugriff ist Stilfrage, keine Pflicht. |
 </content>
 </invoke>
