@@ -294,14 +294,12 @@ Aufrufer und Modul tauschen über IPC Daten zwischen getrennten Prozessen aus. W
 | SIC-08 | MUSS | Über IPC werden nur Daten innerhalb der Vertrauensdomäne des Aufrufers ausgetauscht; aus nicht vertrauenswürdiger Quelle wird nichts deserialisiert. |
 | SIC-09 | KANN | Über IPC und als Config-Objekt übertragene Nutzdaten beschränken sich auf einfache Datentypen; ausführbare oder zustandsbehaftete Objekte werden nicht übertragen. |
 
-### 13.4 Rechtekontext systemverändernder Module
+### 13.4 Code-Baum des Kerns
 
-Systemverändernde Module greifen mit erhöhten Rechten ein. Geringste Rechte sind Mindeststandard.
+Der Code-Baum des pifos-Kerns wird vor Veränderung geschützt. pifos ist ein Bausatz ohne eigene Prozessrechte; er läuft mit den Rechten des einbindenden Programms.
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
-| SIC-10 | MUSS | pifos-Kern, Module und Aktionen laufen mit den geringsten zur Aufgabe nötigen Rechten. |
-| SIC-11 | MUSS | Erhöhte Rechte werden nur dort und nur so lange wie nötig genutzt. |
 | SIC-12 | MUSS | Der pifos-Kern liegt als nur lesbarer Code-Baum vor (Eigentümer root, für Dienstkonten nicht schreibbar). |
 
 ### 13.5 safe-mode und Sicherungsort
@@ -332,6 +330,7 @@ Der Aufrufer führt das Logfile (LOG-01) und protokolliert dabei Fremddaten, ins
 |----|-------|-------------|
 | SIC-19 | MUSS | Fremddaten, die der Aufrufer protokolliert, werden vor dem Schreiben ins Logfile von Steuerzeichen, insbesondere Zeilenumbrüchen, befreit. |
 | SIC-20 | MUSS | In Logmeldungen, Ausnahme-Texten und IPC-Meldungen erscheinen keine Geheimnisse im Klartext. |
+| SIC-27 | MUSS | Das Logfile wird mit engen Rechten (`0600`) angelegt, da es sensible Daten (stdout/stderr aufgerufener Befehle, interne Pfade) enthält. |
 
 ### 13.8 Sicherer Zustand bei Fehlern und Abbruch
 
@@ -363,5 +362,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.04 | 2026-06-27 | Claude | Konsistenz: Inhaltsverzeichnis ohne Listen-Markup; Konfigurator-Pflichtanforderungen als bedingt gekennzeichnet (nur falls Konfigurator vorhanden); Implementierungsdetail (multiprocessing/pickle) aus Kapitel 13.3 entfernt. |
 | 0.05 | 2026-06-27 | Claude | ÜBR-04 neu gefasst (Entscheidung Martin): direkter Zugriff auf öffentliche Attribute, `@property` nur bei Zugriffslogik, keine flächendeckenden getter/setter. |
 | 0.06 | 2026-06-27 | Claude | Begriff korrigiert: MOD-04, MOD-06, MOD-09 von Klassenvariablen auf Instanzvariablen; SIC-01 „gegen … geprüft" zu „auf … anhand einer Positivliste geprüft". |
+| 0.07 | 2026-06-29 | Claude | Rechte-Anforderungen korrigiert: SIC-10 und SIC-11 (Prozessrechte) gestrichen, da pifos als Bausatz keine eigenen Prozessrechte hat; Kapitel 13.4 auf den Code-Baum (SIC-12) fokussiert; neue SIC-27 (Logfile mit engen Rechten 0600) ergänzt. SIC-10/11 bleiben als Lücke unbesetzt. |
 </content>
 </invoke>

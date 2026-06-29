@@ -98,8 +98,6 @@ flowchart TB
 
 Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. COnfig-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
 
-Alle Bausteine und der Aufrufer laufen mit den geringsten zur Aufgabe nötigen Rechten; erhöhte Rechte werden nur dort und nur so lange wie nötig eingesetzt (SIC-10, SIC-11). Die Einzelheiten stehen bei den Modulen (Kapitel 3 „Module") und dem Aufrufer (Kapitel 5 „Aufrufer-Basisklasse PifosCaller").
-
 Öffentliche Attribute sind direkt zugänglich; Zugriffslogik über `@property` kommt nur dort hinzu, wo der Zugriff eine Prüfung oder Berechnung braucht (ÜBR-04). Abschnitt 1.3 führt das aus.
 
 ### 1.3 Attributzugriff
@@ -261,11 +259,7 @@ Den Rollback stützt eine Undo-Registratur in `SystemChangingModule`: ausgeführ
 
 Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht. Sie wird je systemveränderndem Modul entschieden, wenn dessen Eingriff feststeht.
 
-### 3.4 Rechtekontext
-
-Systemverändernde Module greifen mit erhöhten Rechten ein. Ein Modul läuft mit den geringsten zur Aufgabe nötigen Rechten und nutzt erhöhte Rechte nur dort und nur so lange wie nötig (SIC-10, SIC-11). Der Modulprozess erbt den Rechtekontext, den der Aufrufer ihm beim Start gibt (Kapitel 5 „Aufrufer-Basisklasse PifosCaller"); das Modul erweitert ihn nicht von sich aus.
-
-### 3.5 Vertagtes Detail
+### 3.4 Vertagtes Detail
 
 Die genaue Mechanik der Undo-Registratur und das Umkehrverhalten je Aktion hängen vom konkreten Aktionssatz ab und werden festgelegt, sobald dieser feststeht; eine frühere Festlegung wäre Spekulation (ÜBR-05). Gleiches gilt für die Idempotenz-Erkennung je Modul (Abschnitt 3.3).
 
@@ -415,9 +409,9 @@ Nach Prozessende wertet `PifosCaller` den Rückgabewert aus: 0 bedeutet Erfolg, 
 
 Die Basisklasse liefert diese als Leer- oder Standardmethoden; ein konkreter Aufrufer überschreibt sie nach Bedarf (CAL-07). Der konkrete Aufrufer steuert darüber hinaus nur seine Fachlogik und Oberfläche bei (CAL-06).
 
-### 5.3 Rechtekontext
+### 5.3 Code-Baum des Kerns
 
-`PifosCaller` startet die Modulprozesse und bestimmt deren Rechtekontext. Der Aufrufer läuft mit den geringsten zur Aufgabe nötigen Rechten und gibt einem Modulprozess nur die Rechte, die dessen Aufgabe verlangt (SIC-10, SIC-11). Der *pifos*-Kern liegt als nur lesbarer Code-Baum vor, dessen Eigentümer root ist und der für Dienstkonten nicht schreibbar ist (SIC-12); die Einrichtung dieses Code-Baums regelt `docs/05_bereitstellung.md` (Kapitel „Ablageort nach FHS").
+Der *pifos*-Kern liegt als nur lesbarer Code-Baum vor, dessen Eigentümer root ist und der für Dienstkonten nicht schreibbar ist (SIC-12); die Einrichtung dieses Code-Baums regelt `docs/05_bereitstellung.md` (Kapitel „Ablageort nach FHS").
 
 ## 6. Prozessmodell, Steuerung und IPC
 
@@ -526,7 +520,7 @@ Der Aufrufer gibt das eingestellte Loglevel beim Start an das Modul weiter (LOG-
 
 ### 7.2 Schutz protokollierter Fremddaten
 
-Der Aufrufer protokolliert auch Fremddaten, insbesondere stdout und stderr aufgerufener Befehle (AKT-02). Diese Daten werden vor dem Schreiben ins Logfile von Steuerzeichen, insbesondere Zeilenumbrüchen, befreit (SIC-19). In Logmeldungen, Ausnahme-Texten und IPC-Meldungen erscheinen keine Geheimnisse im Klartext (SIC-20). Fehlermeldungen nach außen sind allgemein gehalten; interne Pfade und Details gehen nur ins Log (SIC-23).
+Der Aufrufer protokolliert auch Fremddaten, insbesondere stdout und stderr aufgerufener Befehle (AKT-02). Der Aufrufer legt das Logfile mit engen Rechten (`0600`) an, da es solche sensiblen Daten und interne Pfade enthält (SIC-27). Diese Daten werden vor dem Schreiben ins Logfile von Steuerzeichen, insbesondere Zeilenumbrüchen, befreit (SIC-19). In Logmeldungen, Ausnahme-Texten und IPC-Meldungen erscheinen keine Geheimnisse im Klartext (SIC-20). Fehlermeldungen nach außen sind allgemein gehalten; interne Pfade und Details gehen nur ins Log (SIC-23).
 
 ## 8. Fehlerbehandlung und Ausnahmen
 
@@ -561,3 +555,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.07 | 2026-06-28 | Claude | Drei Kapitelverweise ohne Namen ergänzt (Kapitel 13 „Sicherheit" der Anforderungen, Kapitel 3 „Module", Kapitel 6 „Prozessmodell, Steuerung und IPC"). |
 | 0.08 | 2026-06-28 | Claude | Kapitel 1 umgebaut: Datei-Tabelle auf umschließendes Paket `pifos/` mit Unterpaketen `actions/` und `config/` umgestellt, Module umbenannt (`pifos_caller.py`→`caller.py`, `config.py`→`config/`, `exceptions.py`→`errors.py`); Tabelle in die Kapiteleinleitung gezogen, Abschnitt 1.1 aufgelöst, Folgeabschnitte zu 1.1–1.3 aufgerückt; alle Abschnitts- und Dateibezüge nachgezogen, Tippfehler korrigiert. |
 | 0.09 | 2026-06-28 | Claude | Stilabgleich: *pifos* und die Bausteinbegriffe an ihren Konzeptnennungen kursiv gesetzt; einmaligen Hinweis ergänzt, dass die Klammer-Kennungen auf die Anforderungen verweisen, und die Dateiangabe an der Einzelkennung gekürzt; Anglizismen ersetzt (Boilerplate, Launcher-Skript, Feeder-Thread) und kleinere Grammatik geglättet. |
+| 0.10 | 2026-06-29 | Claude | Falsche Prozessrechte-Aussagen (SIC-10/11) entfernt: Rechte-Absatz in 1.2 gestrichen, Abschnitt 3.4 „Rechtekontext" entfernt (Folgeabschnitt zu 3.4 aufgerückt), Abschnitt 5.3 auf die SIC-12-Aussage zum Code-Baum reduziert und passend benannt. Logfile-Rechte `0600` (SIC-27) in 7.2 ergänzt. |
