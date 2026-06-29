@@ -310,8 +310,8 @@ Der safe-mode legt vor dateiverändernden Aktionen eine Sicherung an (AKT-06/07)
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
-| SIC-13 | MUSS | Eine im safe-mode angelegte Sicherung weitet die Zugriffsrechte gegenüber der Originaldatei nicht aus. |
-| SIC-14 | MUSS | Der einstellbare Sicherungsort wird vor der Nutzung als Pfad geprüft und auf das vorgesehene Verzeichnis begrenzt. |
+| SIC-13 | MUSS | Wird nach AKT-06/AKT-96 eine Sicherung angelegt, weitet diese die Zugriffsrechte gegenüber der Originaldatei nicht aus. |
+| SIC-14 | MUSS | Wird nach AKT-06/AKT-96 eine Sicherung angelegt, wird der Sicherungspfad vorder Nutzung als Pfad geprüft. |
 | SIC-15 | KANN | Prüfung und Schreiben der Sicherung erfolgen so, dass Manipulation über symbolische Verweise oder zeitliche Wettläufe zwischen Prüfung und Nutzung vermieden wird. |
 
 ### 13.6 Laden von Konfigurationsquellen
