@@ -134,9 +134,12 @@ Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Klassenvar
 
 ## 3. Module
 
-Ein *Modul* erledigt eine Aufgabe über *Aktionen*, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Für Module mit umkehrbarer oder prüfbarer Wirkung stellt `Module` die optionalen Methoden `check` und `rollback` bereit, die ein solches Modul überschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt die Basisklasse, die deklarative Konfiguration und ihre Prüfung.
+Dieses Kapitel beschreibt die Basisklasse `Module` und deren (deklarative) Konfiguration.
 
-Das folgende Klassendiagramm zeigt die Basisklasse `Module` mit einem konkreten Modul sowie die Komposition mit `Action`.
+Ein *Modul* ist eine Klasse vom Tpy *Modul*, führt seine Aufgabe mit Hilfe der *Aktionen* durch und erhält als Parameter ein `Config`-Objekt (MOD-01, MOD-02, MOD-05).
+Die Basisklasse `Module` stellt auch die optionalen Methoden `check`, zur Überprüfung von Aktionen, und `rollback`, zum Rückbau der Aktion, bereit, welche bei Nutzung überschrieben werde müsssen (MOD-12, MOD-13).
+
+Das folgende Klassendiagramm zeigt die Basisklasse `Module` mit einem konkreten Beispiel-Modul sowie die Komposition mit `Action`.
 
 ```mermaid
 classDiagram
@@ -203,9 +206,7 @@ Für den Rollback führt das Modul eine Undo-Registratur: ausgeführte, umkehrba
 
 Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht.
 
-### 3.4 Vertagtes Detail
 
-Die genaue Mechanik der Undo-Registratur und das Umkehrverhalten je Aktion hängen vom konkreten Aktionssatz ab und werden festgelegt, sobald dieser feststeht; eine frühere Festlegung wäre Spekulation (ÜBR-05). Gleiches gilt für die Idempotenz-Erkennung je Modul (Abschnitt 3.3).
 
 ## 4. Konfiguration
 
