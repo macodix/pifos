@@ -148,30 +148,11 @@ classDiagram
 
 Die abstrakte Methode `run(self) -> int` führt die Aufgabe aus; jede konkrete Aktion implementiert sie. Sie füllt `status`, `stdout`, `stderr` und `returncode` und gibt einen Rückgabewert zurück. Das Modul liest diese Werte direkt als öffentliche Attribute, etwa `action.status` oder `action.stdout` (AKT-02); benannte Lesemethoden entfallen nach der Festlegung in Abschnitt 1.3 (Attributzugriff). Braucht ein Attribut beim Lesen oder Setzen Logik, kapselt eine `@property` sie, ohne die Zugriffsschreibweise `action.x` zu ändern.
 
-Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen"), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.3). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
+Tritt während `run` ein Fehler auf, erzeugt die Aktion eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen"), die das aufrufende Modul erhält (AKT-03, EXC-01). `safe_mode` und `backup_location` liegen in der Basisklasse; genutzt werden sie allein von dateiändernden Aktionen (Abschnitt 2.2). Aktionen ohne Dateiänderung lassen `safe_mode` unberührt.
 
 Optionen passen eine Aktion an Bedingungen ihrer Ausführung an, ohne ihren atomaren Charakter zu verändern (AKT-04). Sie werden als Konstruktorargumente übergeben oder als Attribut gesetzt, nicht durch zusätzliche Aufgaben in `run`.
 
-### 2.2 Systembefehl-Aktion SysCmdAction
-
-`SysCmdAction(Action)` in `actions/` ist die generische Aktion für Systembefehle ohne eigene spezifische Aktion (AKT-08). Sie ist die am stärksten exponierte Stelle und setzt die Sicherheitsanforderungen der Befehlsausführung um.
-
-Der Konstruktor nimmt den Befehl als Liste einzelner Elemente und eine Zeitgrenze:
-
-```
-SysCmdAction(command: list[str], timeout: float,
-             cwd: str | None = None, env: dict[str, str] | None = None)
-```
-
-`run` führt den Befehl mit `subprocess.Popen` aus. Die Festlegungen:
-
-Die Ausführung erfolgt ohne Shell (`shell=False`) (SIC-03). Befehl und Argumente werden als Liste übergeben, nicht als zusammengesetzte Befehlszeichenkette (SIC-04). `command` ist daher eine `list[str]`; eine Zeichenkette wird nicht angenommen. Jede Ausführung trägt die explizite Zeitgrenze `timeout`; nach Ablauf wird der Prozess beendet und der Fehler als Ausnahme gemeldet (SIC-05). Bei sicherheitsrelevanten Programmen wird der Programmpfad als absoluter Pfad angegeben oder in einer kontrollierten Umgebung (`env` mit gesetztem `PATH`) aufgelöst (SIC-06).
-
-`Popen` mit getrennten Strömen für stdout und stderr erlaubt das laufende Auslesen während langer Befehle; die Aktion erfasst beide Ströme und den Returncode und stellt sie dem Modul bereit (AKT-02). Bei Bedarf reicht das Modul Ausgaben laufend als Meldungen an den Aufrufer (LOG-02). `subprocess.run` ist nicht gewählt, weil es das Ergebnis erst am Ende liefert und keine laufende Statusmeldung erlaubt.
-
-Werte aus der Konfiguration, die als Argument in `command` oder als Programmpfad einfließen, prüft das aufrufende Modul vor der Übergabe auf Typ, Format und Wertebereich anhand einer Positivliste; die Aktion selbst nimmt keine inhaltliche Prüfung vor (SIC-01, SIC-02). Die Prüfung liegt beim Modul, weil der Konfigurationsbaustein bewusst nicht inhaltlich prüft (Kapitel 3 „Module" und Kapitel 4 „Konfiguration").
-
-### 2.3 Dateiändernde Aktionen und safe-mode
+### 2.2 Dateiändernde Aktionen und safe-mode
 
 Aktionen, die Dateien ändern, überschreiben oder löschen, bieten den aktivierbaren safe-mode, der die Datei vor der Änderung sichert (AKT-06). `CopyFileAction` ist ein erstes Beispiel; weitere entstehen bei Bedarf.
 
@@ -179,7 +160,7 @@ Ist `safe_mode` gesetzt, legt die Aktion vor der Änderung eine Kopie der Datei 
 
 Die Sicherung ist sicherheitsrelevant und unterliegt drei Vorkehrungen. Die Zugriffsrechte der Sicherung gehen nicht über die der Originaldatei hinaus; die Kopie übernimmt deren Rechte und weitet sie nicht aus (SIC-13). `backup_location` wird vor der Nutzung als Pfad geprüft und auf das vorgesehene Verzeichnis begrenzt (SIC-14). Prüfung und Schreiben erfolgen so, dass Manipulation über symbolische Verweise und zeitliche Wettläufe zwischen Prüfung und Nutzung vermieden werden, etwa durch Öffnen ohne Folgen symbolischer Verweise und Schreiben über einen Dateideskriptor statt erneut über den Pfad (SIC-15).
 
-### 2.4 Vertagtes Detail
+### 2.3 Vertagtes Detail
 
 Der konkrete Satz weiterer Aktionen über `SysCmdAction` und `CopyFileAction` hinaus entsteht mit den ersten Modulen, die sie benötigen. Eine Aufzählung vorab wäre Spekulation ohne Bedarf (ÜBR-05). Das Umkehrverhalten je dateiändernder Aktion für die Undo-Registratur ist in Kapitel 3 „Module" behandelt.
 
@@ -544,3 +525,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.09 | 2026-06-28 | Claude | Stilabgleich: *pifos* und die Bausteinbegriffe an ihren Konzeptnennungen kursiv gesetzt; einmaligen Hinweis ergänzt, dass die Klammer-Kennungen auf die Anforderungen verweisen, und die Dateiangabe an der Einzelkennung gekürzt; Anglizismen ersetzt (Boilerplate, Launcher-Skript, Feeder-Thread) und kleinere Grammatik geglättet. |
 | 0.10 | 2026-06-29 | Claude | Falsche Prozessrechte-Aussagen (SIC-10/11) entfernt: Rechte-Absatz in 1.2 gestrichen, Abschnitt 3.4 „Rechtekontext" entfernt (Folgeabschnitt zu 3.4 aufgerückt), Abschnitt 5.3 auf die SIC-12-Aussage zum Code-Baum reduziert und passend benannt. Logfile-Rechte `0600` (SIC-27) in 7.2 ergänzt. |
 | 0.11 | 2026-06-29 | Claude | SIC-12 in die Bereitstellung übernommen, Abschnitt 5.3 „Code-Baum des Kerns" aufgelöst; „sowie den Rechtekontext" aus der Kapitel-3-Einleitung entfernt (Rückstand des entfernten Abschnitts 3.4). |
+| 0.12 | 2026-06-29 | Claude | SysCmdAction (Abschnitt 2.2) in das neue Dokument `05_standardkomponenten.md` ausgelagert; Folgeabschnitte auf 2.2 (safe-mode) und 2.3 (Vertagtes Detail) aufgerückt, Abschnittsbezug in 2.1 angepasst. |
