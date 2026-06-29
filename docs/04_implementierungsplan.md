@@ -29,7 +29,7 @@ Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert.
 |---|---|
 | `action.py` | abstrakte Basisklasse `Action` |
 | `actions/` (Unterpaket) | generische Aktionen, u. a. `SysCmdAction`, `CopyFileAction` |
-| `module.py` | abstrakte Basisklassen `Module`, `SystemChangingModule` |
+| `module.py` | abstrakte Basisklasse `Module` |
 | `config/` (Unterpaket) | `Config`, `ConfigItem`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
 | `caller.py` | abstrakte Basisklasse `PifosCaller` |
 | `ipc.py` | `IpcMessage`, Enums `MessageKind`, `LogLevel` |
@@ -134,9 +134,9 @@ Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Klassenvar
 
 ## 3. Module
 
-Ein *Modul* erledigt eine Aufgabe über *Aktionen*, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Systemverändernde Module erben von der Zwischenklasse `SystemChangingModule`, die den Überprüfungsmodus und den Rollback vorschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt beide Basisklassen, die deklarative Konfiguration und ihre Prüfung.
+Ein *Modul* erledigt eine Aufgabe über *Aktionen*, erhält seine Parameter als `Config`-Objekt und erbt von der gemeinsamen Basisklasse `Module` (MOD-01, MOD-02, MOD-05). Für Module mit umkehrbarer oder prüfbarer Wirkung stellt `Module` die optionalen Methoden `check` und `rollback` bereit, die ein solches Modul überschreibt (MOD-12, MOD-13). Dieses Kapitel beschreibt die Basisklasse, die deklarative Konfiguration und ihre Prüfung.
 
-Das folgende Klassendiagramm zeigt die Basisklasse `Module`, die abstrakte Zwischenklasse `SystemChangingModule` mit einem konkreten Modul sowie die Komposition mit `Action`.
+Das folgende Klassendiagramm zeigt die Basisklasse `Module` mit einem konkreten Modul sowie die Komposition mit `Action`.
 
 ```mermaid
 classDiagram
@@ -152,17 +152,13 @@ classDiagram
         +control_action()
         +send_message()
         +receive_message()
-    }
-    class SystemChangingModule {
-        <<abstract>>
-        +check()*
-        +rollback()*
+        +check()
+        +rollback()
     }
     class InstModule
     class Action
 
-    Module <|-- SystemChangingModule
-    SystemChangingModule <|-- InstModule
+    Module <|-- InstModule
     Module o-- "0..*" Action : Komposition
 ```
 
@@ -180,6 +176,8 @@ Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfigu
 | `control_action(self, action, **options) -> None` | steuert eine Aktion über Parameter oder Instanzvariablen (MOD-06) |
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
+| `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
+| `rollback(self) -> None` | optional: nimmt die Eingriffe zurück; Default ohne Wirkung, ein Modul mit umkehrbarer Wirkung überschreibt sie (MOD-13) |
 
 `send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6 „Prozessmodell, Steuerung und IPC"); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
 
@@ -189,15 +187,15 @@ Ein Modul macht über `CONFIG` sichtbar, welche Konfiguration es benötigt (MOD-
 
 Beim Start prüft `check_config` die eingehenden Werte anhand der Deklaration: Pflichtwerte müssen vorhanden sein, fehlende Kann-Werte erhalten ihren Vorgabewert, und das Feld `check` wird angewendet (MOD-09). Die Prüfung ist formal, nicht inhaltlich (KFG-08). Werte, die das Modul anschließend als Argument eines Systembefehls oder als Dateipfad verwendet, prüft es vor dieser Verwendung auf Typ, Format und Wertebereich anhand einer Positivliste, da der Konfigurationsbaustein keine inhaltliche Prüfung vornimmt (SIC-01, SIC-02). Nach erfolgreicher Prüfung legt das Modul die Werte in seinen Instanzvariablen ab (MOD-04).
 
-### 3.3 Systemverändernde Module
+### 3.3 Überprüfung und Rollback
 
-Module, die das System verändern, erben von der abstrakten Zwischenklasse `SystemChangingModule(Module)` in `module.py`. Sie schreibt zwei abstrakte Methoden vor und erzwingt damit deren Vorhandensein schon bei der Klassendefinition; eine reine Namenskonvention prüfte das nicht.
+`check` und `rollback` sind optionale Methoden der Basisklasse `Module`. Ein Modul mit umkehrbarer oder prüfbarer Wirkung überschreibt sie; ein Modul ohne solche Wirkung lässt sie unberührt. Sie sind nicht an Systemänderungen gebunden — auch ein Modul, das im Anwendungskontext eine Datei kopiert, kann das Ergebnis prüfen und zurücknehmen.
 
-`check(self) -> bool` ist der Überprüfungsmodus: Er prüft den Erfolg der eigenen Aktionen und Eingriffe gezielt und vollständig (MOD-12). `rollback(self) -> None` macht die Eingriffe rückgängig (MOD-13). Die Zwischenklasse ist die einzige zusätzliche Vererbungsebene; eine feinere Aufteilung in Untertypen entsteht erst bei konkretem Bedarf (ÜBR-03).
+`check(self) -> bool | None` ist der Überprüfungsmodus: Er prüft den Erfolg der eigenen Aktionen und Eingriffe gezielt und vollständig und gibt das Ergebnis zurück (MOD-12). Der Default liefert `None` und zeigt damit an, dass das Modul keine Überprüfung anbietet; der Aufrufer erkennt das unmittelbar am Rückgabewert, ohne gesondertes Merkmal. `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13); der Default bleibt wirkungslos.
 
-Den Rollback stützt eine Undo-Registratur in `SystemChangingModule`: ausgeführte, umkehrbare Eingriffe und die im safe-mode gesicherten Dateien (Kapitel 2) tragen sich ein; `rollback` arbeitet die Registratur in umgekehrter Reihenfolge ab. Die gemeinsame Mechanik bleibt in der Basisklasse, das konkrete `rollback` schlank. Der Rollback ist eine je Modul bereitzustellende Schnittstelle, keine vom Bausatz garantierte allgemeine Rücknahme beliebiger Systemeingriffe (Bedingung B1 der Machbarkeit).
+Für den Rollback führt das Modul eine Undo-Registratur: ausgeführte, umkehrbare Eingriffe und die im safe-mode gesicherten Dateien (Kapitel 2 „Aktionen") werden darin vermerkt; `rollback` arbeitet die Registratur in umgekehrter Reihenfolge ab. Der Rollback ist eine je Modul bereitzustellende Schnittstelle, keine vom Bausatz garantierte allgemeine Rücknahme beliebiger Systemeingriffe (Bedingung B1 der Machbarkeit).
 
-Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht. Sie wird je systemveränderndem Modul entschieden, wenn dessen Eingriff feststeht.
+Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht.
 
 ### 3.4 Vertagtes Detail
 
@@ -494,3 +492,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.10 | 2026-06-29 | macodix | Falsche Prozessrechte-Aussagen (SIC-10/11) entfernt: Rechte-Absatz in 1.2 gestrichen, Abschnitt 3.4 „Rechtekontext" entfernt (Folgeabschnitt zu 3.4 aufgerückt), Abschnitt 5.3 auf die SIC-12-Aussage zum Code-Baum reduziert und passend benannt. Logfile-Rechte `0600` (SIC-27) in 7.2 ergänzt. |
 | 0.11 | 2026-06-29 | macodix | SIC-12 in die Bereitstellung übernommen, Abschnitt 5.3 „Code-Baum des Kerns" aufgelöst; „sowie den Rechtekontext" aus der Kapitel-3-Einleitung entfernt (Rückstand des entfernten Abschnitts 3.4). |
 | 0.12 | 2026-06-29 | macodix | SysCmdAction (Abschnitt 2.2) in das neue Dokument `05_standardkomponenten.md` ausgelagert; Folgeabschnitte auf 2.2 (safe-mode) und 2.3 (Vertagtes Detail) aufgerückt, Abschnittsbezug in 2.1 angepasst. |
+| 0.13 | 2026-06-29 | macodix | Zwischenklasse `SystemChangingModule` aufgelöst: `check` und `rollback` als optionale Methoden in die Basisklasse `Module` aufgenommen (`check(self) -> bool \| None`, Default `None`); Abschnitt 3.3 auf „Überprüfung und Rollback" umgestellt, Klassendiagramm, Kapiteleinleitung und Modul-Tabelle nachgezogen. |
