@@ -115,10 +115,13 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 | Variable | Typ | Bedeutung |
 |----------|-----|-----------|
 | `status` | `str` | Zustand der Ausführungm, *not_runnned*, *running*, *finished* oder *failed*, Default: *not_runnned* |
+| `PARAMS` | `list[ConfigItem]` | Klassenattribut: deklariert die Parameter der Aktion; leer, wenn die Aktion keine Parameter hat |
 
 
 | Methode | Rückgabewert | Bedeutung |
 | `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück) |
+
+Das Klassenattribut `PARAMS: list[ConfigItem]` deklariert die Parameter der Aktion — je Parameter Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung, dieselbe Struktur wie `Module.CONFIG` (Kapitel 4 „Konfiguration"). Anhand dieser Deklaration prüft das aufrufende Modul übergebene Parameter, bevor es die Aktion nutzt (`check_action_params`, Kapitel 3 „Module"). Eine Aktion ohne Parameter lässt `PARAMS` leer.
 
 
 ### 2.1.1 Implementierung von Action
@@ -501,3 +504,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.12 | 2026-06-29 | macodix | SysCmdAction (Abschnitt 2.2) in das neue Dokument `05_standardkomponenten.md` ausgelagert; Folgeabschnitte auf 2.2 (safe-mode) und 2.3 (Vertagtes Detail) aufgerückt, Abschnittsbezug in 2.1 angepasst. |
 | 0.13 | 2026-06-29 | macodix | Zwischenklasse `SystemChangingModule` aufgelöst: `check` und `rollback` als optionale Methoden in die Basisklasse `Module` aufgenommen (`check(self) -> bool \| None`, Default `None`); Abschnitt 3.3 auf „Überprüfung und Rollback" umgestellt, Klassendiagramm, Kapiteleinleitung und Modul-Tabelle nachgezogen. |
 | 0.14 | 2026-06-29 | macodix | Zentrale Aktions-Auflösung in `Module` ergänzt: `resolve_action` (Existenz/Klasse aus dem Aktions-Verzeichnis) und getrennt `check_action_params` (Parameter gegen die Aktions-Deklaration); Mechanik einmal in der Basisklasse statt je Modul. Füllung des Verzeichnisses als Detail vertagt. |
+| 0.15 | 2026-06-29 | macodix | Parameter-Deklaration in `Action` ergänzt: Klassenattribut `PARAMS: list[ConfigItem]` (Name, Verbindlichkeit, Vorgabe, Prüfung, Beschreibung je Parameter, Struktur wie `Module.CONFIG`); Grundlage für `check_action_params`. |
