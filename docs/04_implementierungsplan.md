@@ -119,6 +119,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 
 | Methode | Rückgabewert | Bedeutung |
+|---------|--------------|-----------|
 | `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück) |
 
 Das Klassenattribut `PARAMS: list[ConfigItem]` deklariert die Parameter der Aktion — je Parameter Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung, dieselbe Struktur wie `Module.CONFIG` (Kapitel 4 „Konfiguration"). Anhand dieser Deklaration prüft das aufrufende Modul übergebene Parameter, bevor es die Aktion nutzt (`check_action_params`, Kapitel 3 „Module"). Eine Aktion ohne Parameter lässt `PARAMS` leer.
@@ -126,7 +127,9 @@ Das Klassenattribut `PARAMS: list[ConfigItem]` deklariert die Parameter der Akti
 
 ### 2.1.1 Implementierung von Action
 
-Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgaeb enthalten.
+Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgabe enthalten.
+
+
 
 Die Methode `run(self) -> int` beinhaltet bei konkrete Implementlierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
 
