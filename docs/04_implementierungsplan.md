@@ -23,7 +23,7 @@ Die Sicherheitsanforderungen aus Kapitel 13 „Sicherheit" der Anforderungen `do
 
 *pifos* besteht aus den drei grundlegenden Komponenten *Aktionen*, *Module* und *Konfiguration*, sowie einer Aufrufer-Basisklasse zur leichteren Nutzung von *pifos* und einiger Helfer-Klassen (ÜBR-01). 
 
-Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. *pifos* wir als Python-Paket `pifos/` mit kurzen Modulnamen zur verfügung gestellt. *Aktionen* und *Konfigurationen* werden in den Unterpaketen `actions/` und `config/` abgelegt.
+Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert. *pifos* wird als Python-Paket `pifos/` mit kurzen Modulnamen zur Verfügung gestellt. *Aktionen* und *Konfigurationen* werden in den Unterpaketen `actions/` und `config/` abgelegt.
 
 | Modul in `pifos/` | Inhalt |
 |---|---|
@@ -41,7 +41,7 @@ Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert.
 
 Aufrufende Skripte sollten eine Klasse beinhalten, welche von `PifosCaller` in `caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Nutzung von *pifos* einschl. der IPC-Funktionalität zur Verfügung.  
 
-Der Aufrufer instanziiert ein Config-Objekt mit einem spezfischen Konfigformat (z. B. 'ini', 'toml', 'json' usw.) und startet ein oder mehrere Module jeweils als eigenen Prozess (STR-01, STR-02). Dabei werden die erforderlichen Config-Daten als Config-Objet an das Modul übergeben. Ein Modul wiederum hat eine oder mehrere Aktionen (Komposition) und steuert diese über Parameter und Instanzvariablen (MOD-01, MOD-06).  Das Modul leitet Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer. Die Führung des Logfiles ist Sache des Aufrufers (LOG-01, LOG-02).
+Der Aufrufer instanziiert ein Config-Objekt mit einem spezifischen Konfigformat (z. B. 'ini', 'toml', 'json' usw.) und startet ein oder mehrere Module jeweils als eigenen Prozess (STR-01, STR-02). Dabei werden die erforderlichen Config-Daten als Config-Objekt an das Modul übergeben. Ein Modul wiederum hat eine oder mehrere Aktionen (Komposition) und steuert diese über Parameter und Instanzvariablen (MOD-01, MOD-06).  Das Modul leitet Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer. Die Führung des Logfiles ist Sache des Aufrufers (LOG-01, LOG-02).
 
 Ein Beispiel für eine konkrete Action-Klasse und Formatklasse, sowie weitere Hilfsklassen und vollständige Methodenlisten für die abstrakten Klassen werden in den nachfolgenden Kapiteln (*2. Aktionen*, *3. Module* und *4. Konfiguration*) beschrieben.
 
@@ -65,7 +65,7 @@ classDiagram
     PifosCaller ..> Module : startet/steuert via IPC
 ```
 
-Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet dModulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben der ausgeführten Befehele. Das Modul liest den Satus aus den Instanzvariablen der Aktionen und erstellt daraus Meldungen ie per IPC an den Aufrufer weitergelietet werden. Der Aufrufer verarbeitet die Meldungen, trifft anhand diese Meldungen ggf. Entscheidungen und schreibt eine Logdatei (LOG-01, LOG-02).
+Das folgende Datenflussdiagramm zeigt den bereits oben beschriebenen Datenfluss zur Laufzeit. Der Aufrufer liest die Konfiguration über `Config` aus der Quelle, startet die Modulprozesse und führt die Logdatei. Aktionen erfassen Status und Ausgaben der ausgeführten Befehle. Das Modul liest den Status aus den Instanzvariablen der Aktionen und erstellt daraus Meldungen, die per IPC an den Aufrufer weitergeleitet werden. Der Aufrufer verarbeitet die Meldungen, trifft anhand dieser Meldungen ggf. Entscheidungen und schreibt eine Logdatei (LOG-01, LOG-02).
 
 ```mermaid
 flowchart TB
@@ -96,11 +96,11 @@ flowchart TB
 
 ### 1.2. Empfehlung zur Code-Gestaltung
 
-Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. Config-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
+Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Vererbungen und komplexe Vererbungsstrukturen sollten vermieden werden. Komponenten (z. B. Config-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwickelt werden, wenn sie auch wirklich benötigt werden (ÜBR-03, ÜBR-05).
 
-Öffentliche Attribute sind i. d. R direkt über `obj.x` zugänglich, *getter* und *setter* (`get_x()`/`set_x()`) werden nicht genutzt. Ein Zugriff über `@property` kann beo Bedarf genutzt werden (ÜBR-04).
+Öffentliche Attribute sind i. d. R. direkt über `obj.x` zugänglich, *getter* und *setter* (`get_x()`/`set_x()`) werden nicht genutzt. Ein Zugriff über `@property` kann bei Bedarf genutzt werden (ÜBR-04).
 
-Aktionen, die Dateien ändern, überschreiben oder löschen, müssen die Originaldatei vor sichern oder vor Überschreibn ohne explizite Aufforderung schützen (AKT-06).
+Aktionen, die Dateien ändern, überschreiben oder löschen, müssen die Originaldatei vorher sichern oder vor Überschreiben ohne explizite Aufforderung schützen (AKT-06).
 
 
 ## 2. Aktionen
@@ -110,7 +110,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 ### 2.1 Basisklasse Action
 
-`Action` ist eine abstrakte Basisklasse (`action.Action`) in `action.py`. Die konkreten Implementierungen der `Action`-Klasse erhalten die erforderlichen Parameter vom aufrufenden Modul Das Klassenattribut `PARAMS: list[str]` enthält die Namen der erlaubten Parameter. Bei einer Aktionen die keine Parameter erfordern bleibt `PARAMS` leer.Die `Action`-Klasse legt den Ausführungszustand in der Instanzvariablen `status` ab. Die `run`-Methode enthält die jeweilige konret auszuführende Aktion. 
+`Action` ist eine abstrakte Basisklasse (`action.Action`) in `action.py`. Die konkreten Implementierungen der `Action`-Klasse erhalten die erforderlichen Parameter vom aufrufenden Modul. Das Klassenattribut `PARAMS: list[str]` enthält die Namen der erlaubten Parameter. Bei einer Aktion, die keine Parameter erfordert, bleibt `PARAMS` leer. Die `Action`-Klasse legt den Ausführungszustand in der Instanzvariablen `status` ab. Die `run`-Methode enthält die jeweilige konkret auszuführende Aktion. 
 
 **HINWEIS**
 
@@ -119,7 +119,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 | Variable | Typ | Bedeutung |
 |----------|-----|-----------|
-| `status` | `str` | Zustand der Ausführungm, *not_runnned*, *running*, *finished* oder *failed*, Default: *not_runnned* |
+| `status` | `str` | Zustand der Ausführung, *not_runned*, *running*, *finished* oder *failed*, Default: *not_runned* |
 | `PARAMS` | `list[str]` | Klassenattribut: Namen der Parameter der Aktion; leer, wenn die Aktion keine Parameter hat |
 
 
@@ -131,24 +131,24 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 ### 2.1.1. Implementierung von Action
 
-Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgabe enthalten.
+Die Implementierungen von `Action` können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgabe enthalten.
 
-Die Methode `run(self) -> str` beinhaltet bei konkrete Implementlierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
+Die Methode `run(self) -> str` beinhaltet bei konkreter Implementierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
 
-Die Ausführung der Aktion ist immer mit einer `try except`-Klausel zu versehen. Die Aktion darf niemals das gesamte Skript beenden! Im Fehlerfall wurd die `status`-variable auf *failed' gesetzt und eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen") erzeugt. Die Ausnahme-Behandlung wird an das aufrufende Modul weitergereicht. Dabei ist darauf zu achten, dass möglichst umfangreiche Informationen zur Verfügung gestellt werden um ggf. eine weitere Diagnostik durch das aufrufende Modul zu ermöglichen.
+Die Ausführung der Aktion ist immer mit einer `try except`-Klausel zu versehen. Die Aktion darf niemals das gesamte Skript beenden! Im Fehlerfall wird die `status`-Variable auf *failed* gesetzt und eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen") erzeugt. Die Ausnahme-Behandlung wird an das aufrufende Modul weitergereicht. Dabei ist darauf zu achten, dass möglichst umfangreiche Informationen zur Verfügung gestellt werden um ggf. eine weitere Diagnostik durch das aufrufende Modul zu ermöglichen.
 
-Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Instanzvariablen eingeführt und in der `run()`-Methode mit der vollständigen Ausgabe der entsprechenden Kanäle (capturing) gefüllt. Zusätzlich wird die Instanzvariable `returncode` genutzt um den Rückgabewert des Systembefehls abzulegen. Bei einem `returncode' ungleich '0' (Linux) eine `ActionError`-Ausnahme erzeugt und an das Modil übergeben.
+Führt eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Instanzvariablen eingeführt und in der `run()`-Methode mit der vollständigen Ausgabe der entsprechenden Kanäle (capturing) gefüllt. Zusätzlich wird die Instanzvariable `returncode` genutzt, um den Rückgabewert des Systembefehls abzulegen. Bei einem `returncode` ungleich '0' (Linux) wird eine `ActionError`-Ausnahme erzeugt und an das Modul übergeben.
 
 
 ## 3. Module
 
-Ein *Modul* ist eine abstrakte Klasse vom Tpy *Modul* (aus `module.py`)und dient zur fachlichen Abarbeitung von ein oder mehrerer Aktionen. Sie erhält als Parameter ein `Config`-Objekt vom aufrufenden Prozess. Für die Durchführung seine Aufgabe nutzen Module die *Aktionen* (MOD-01, MOD-02, MOD-05).
+Ein *Modul* ist eine abstrakte Klasse vom Typ *Modul* (aus `module.py`) und dient zur fachlichen Abarbeitung von einer oder mehreren Aktionen. Sie erhält als Parameter ein `Config`-Objekt vom aufrufenden Prozess. Für die Durchführung seiner Aufgabe nutzen Module die *Aktionen* (MOD-01, MOD-02, MOD-05).
 
 **HINWEIS**
 
-Die vom Modul an dei Aktionen weitergegebenen Parameter MÜSSEN vor Weitergabe GEPRÜFT werden, sofern dies nicht schon auf aufrufenden Prozes erledigt wurde!
+Die vom Modul an die Aktionen weitergegebenen Parameter MÜSSEN vor Weitergabe GEPRÜFT werden, sofern dies nicht schon im aufrufenden Prozess erledigt wurde!
 
-Die Basisklasse `Module` stellt auch die optionalen Methoden `check`, zur Überprüfung von Aktionen, und `rollback`, zum Rückbau der Aktion, bereit, welche bei Nutzung überschrieben werde müsssen (MOD-12, MOD-13).
+Die Basisklasse `Module` stellt auch die optionalen Methoden `check`, zur Überprüfung von Aktionen, und `rollback`, zum Rückbau der Aktion, bereit, welche bei Nutzung überschrieben werden müssen (MOD-12, MOD-13).
 
 Das folgende Klassendiagramm zeigt die Basisklasse `Module` mit einem konkreten Beispiel-Modul sowie die Komposition mit `Action`.
 
@@ -179,13 +179,13 @@ classDiagram
 
 ### 3.1. Basisklasse Module
 
-`Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt Methoden Mehoden zu Ausführung und Steuerung von Aktionen sowie zur Interaktion mit dem aufrufendem Prozss zur Verfügung (MOD-05).
+`Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt Methoden zur Ausführung und Steuerung von Aktionen sowie zur Interaktion mit dem aufrufenden Prozess zur Verfügung (MOD-05).
 
 Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst. Die formale Prüfung (z. B. 'ist Zahl', 'ist Email-Adresse') kann über die `check_pattern`-Methode (Kapitel 4 „Konfiguration") des `Config`-Objektes durchgeführt werden. Die inhaltlich fachliche Prüfung muss durch eigenen Code in der `Module`-Implementierung erfolgen. Beide Prüfungen können aber auch bereits im Aufrufer erfolgen im Modul oder beim Aufrufer.
 
-Über die Methoden `send_message` und `receive_message` kommuniziert dsa Modul über  IPC mit dem aufrufenden Prozess (Kapitel 6 „Prozessmodell, Steuerung und IPC"). ; die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. 
+Über die Methoden `send_message` und `receive_message` kommuniziert das Modul über IPC mit dem aufrufenden Prozess (Kapitel 6 „Prozessmodell, Steuerung und IPC").
 
-`resolve_action` sucht eine Aktion im Aktions-Verzeichnis und liefert als Rückgabewert die `Action`-Klasse bei Erfolg oder meldet einen Fehler bei Mißerolg.
+`resolve_action` sucht eine Aktion im Aktions-Verzeichnis und liefert als Rückgabewert die `Action`-Klasse bei Erfolg oder meldet einen Fehler bei Misserfolg.
 
 | Methode | Zweck |
 |---------|-------|
@@ -204,17 +204,17 @@ Module sollen beschreibende Namen erhalten um den Verwendungszweck zu erkennnen,
 
 ##### 3.1.1.1. Konfigurationsdeklaration und Prüfung
 
-Ein Modul liste in `CONFIG` die benötigten Konfigurationsparemeter auf. Diese Liste ist letztlich rein informativ für den aufrufenden Prozess und impliziert keine Prüfung oder Vorgabewerte (MOD-10, MOD-11). Beim Start prüft `check_config` das Vorhandensein der in `CONFIG` genannten Werte und legt sie in den Instanzvariablen des Moduls ab (MOD-09, MOD-04).
+Ein Modul listet in `CONFIG` die benötigten Konfigurationsparameter auf. Diese Liste ist letztlich rein informativ für den aufrufenden Prozess und impliziert keine Prüfung oder Vorgabewerte (MOD-10, MOD-11). Beim Start prüft `check_config` das Vorhandensein der in `CONFIG` genannten Werte und legt sie in den Instanzvariablen des Moduls ab (MOD-09, MOD-04).
 
-Eine formale Prüfung einzelner Konfigurationswert Werte ist über die `Config`-Methode `check_pattern` möglich (Kapitel 4 „Konfiguration"). Die fachlich inhaltliche Prüfung (z. B. korrekte Pfade beim Kopieren einer Datei) der Konfiguration wird im das Modul aufrufenden Prozess empfohlen, kann aber auch im Modul erfolgen.
+Eine formale Prüfung einzelner Konfigurationswerte ist über die `Config`-Methode `check_pattern` möglich (Kapitel 4 „Konfiguration"). Die fachlich inhaltliche Prüfung (z. B. korrekte Pfade beim Kopieren einer Datei) der Konfiguration wird im das Modul aufrufenden Prozess empfohlen, kann aber auch im Modul erfolgen.
 
-##### 3.1.1.1. Überprüfung und Rollback
+##### 3.1.1.2. Überprüfung und Rollback
 
 Die Methoden `check` und `rollback` sind optional und dienen als standadisierte Aufrufe für Überprüfungen der erfolgreiche Abarbeitung des Modules oder der Zurücknahme der durchgefüherten Aktivitäten e Methoden der Basisklasse `Module`.
 
-Die Methode `check(self) -> bool | None` gibt bei erfolgreicher Bestätigung der Modulaktivitäten 'True' zurück und Fehlerfall 'False'. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, das `check(self)` in diesem Modul nicht implemtiert wurde. Die genauen Test zur Überprüfung müssen in der Methode programmiert werden.
+Die Methode `check(self) -> bool | None` gibt bei erfolgreicher Bestätigung der Modulaktivitäten 'True' zurück und im Fehlerfall 'False'. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, dass `check(self)` in diesem Modul nicht implementiert wurde. Die genauen Tests zur Überprüfung müssen in der Methode programmiert werden.
  
-Die Methode `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13). War der Rückbau erfolgreich, liefert `rollback(self)` den Wert `True`und im Fehlerfall den Wert `False? zurück. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, das `rollback(self)` in diesem Modul nicht implemtiert wurde. Die genauen Umsetzung des Rollbacks müssen in der Methode programmiert werden.
+Die Methode `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13). War der Rückbau erfolgreich, liefert `rollback(self)` den Wert `True` und im Fehlerfall den Wert `False` zurück. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, dass `rollback(self)` in diesem Modul nicht implementiert wurde. Die genaue Umsetzung des Rollbacks muss in der Methode programmiert werden.
 
 Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht.
 
@@ -497,3 +497,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.17 | 2026-06-30 | Claude | `check_action_params` aus `Module` gestrichen (Entscheidung Martin); nach der Vereinfachung auf Namenslisten blieb nur ein Namensabgleich. In `Module` verbleibt `resolve_action`; die Parameter-Werte prüft das Modul oder der Aufrufer selbst. |
 | 0.18 | 2026-06-30 | Claude | Konsistenzbefunde behoben: Dateiverweis `05`→`06_bereitstellung.md` (4.2); ins Leere zeigenden safe-mode-Kapitelzeiger in 3.3 entfernt; `run`-Rückgabe in der Tabelle (2.1) auf `int` vereinheitlicht; `stdout`/`stderr`/`returncode` in 2.1.1 als Instanzvariablen benannt; `obj.x` (1.2); `MOD-01` (1.1). |
 | 0.19 | 2026-06-30 | Claude | `run`-Rückgabe zurück auf den Status (`str`, `obj.status`): Tabelle 2.1 und Signatur in 2.1.1 angeglichen (Korrektur zu 0.18, Entscheidung Martin). |
+| 0.20 | 2026-06-30 | Claude | Rechtschreib- und Tippfehler in den Kapiteln 1–3 korrigiert; doppelte Abschnittsnummer 3.1.1.1→3.1.1.2; toten IPC-Halbsatz in 3.1 entfernt. Grammatikalisch unklare Sätze und Konsistenzpunkte (u. a. `rollback`-Signatur) zur Klärung unangetastet gelassen. |
