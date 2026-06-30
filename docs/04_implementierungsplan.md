@@ -197,26 +197,24 @@ Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die We
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
 | `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
-| `rollback(self) -> None` | optional: nimmt die Eingriffe zurück; Default ohne Wirkung, ein Modul mit umkehrbarer Wirkung überschreibt sie (MOD-13) |
 
 #### 3.1.1. Implementierung von Module
 
 Module sollen beschreibende Namen erhalten um den Verwendungszweck zu erkennnen, so sollte z. B. ein Installationsmodul könnte den Klassennamen `InstModule`  und/oder den Dateinamen `inst_` erhalten (MOD-07).
 
+##### 3.1.1.1. Konfigurationsdeklaration und Prüfung
 
-### 3.2 Konfigurationsdeklaration und Prüfung
+Ein Modul liste in `CONFIG` die benötigten Konfigurationsparemeter auf. Diese Liste ist letztlich rein informativ für den aufrufenden Prozess und impliziert keine Prüfung oder Vorgabewerte (MOD-10, MOD-11). Beim Start prüft `check_config` das Vorhandensein der in `CONFIG` genannten Werte und legt sie in den Instanzvariablen des Moduls ab (MOD-09, MOD-04).
 
-Ein Modul macht über `CONFIG` sichtbar, welche Konfigurationswerte es benötigt — eine Liste der Namen (MOD-08). Welche davon Pflicht sind, welche einen Vorgabewert haben und wie sie geprüft werden, regelt das Modul in seinem Code (MOD-10, MOD-11); es gibt dafür keine eigene Deklarationsstruktur.
+Eine formale Prüfung einzelner Konfigurationswert Werte ist über die `Config`-Methode `check_pattern` möglich (Kapitel 4 „Konfiguration"). Die fachlich inhaltliche Prüfung (z. B. korrekte Pfade beim Kopieren einer Datei) der Konfiguration wird im das Modul aufrufenden Prozess empfohlen, kann aber auch im Modul erfolgen.
 
-Beim Start prüft `check_config` das Vorhandensein der in `CONFIG` genannten Werte und legt sie in den Instanzvariablen des Moduls ab (MOD-09, MOD-04). Pflicht- und Kann-Behandlung sowie Vorgabewerte regelt das Modul selbst (MOD-10, MOD-11); eine formale Prüfung einzelner Werte ist über `check_pattern` möglich (Kapitel 4 „Konfiguration"). Werte, die anschließend als Argument eines Systembefehls oder als Dateipfad dienen, prüft die verwendende Stelle vorher auf Typ, Format und Wertebereich anhand einer Positivliste (SIC-01, SIC-02) — bevorzugt der Aufrufer, dort, wo die Eingabe vorkommt.
+##### 3.1.1.1. Überprüfung und Rollback
 
-### 3.3 Überprüfung und Rollback
+Die Methoden `check` und `rollback` sind optional und dienen als standadisierte Aufrufe für Überprüfungen der erfolgreiche Abarbeitung des Modules oder der Zurücknahme der durchgefüherten Aktivitäten e Methoden der Basisklasse `Module`.
 
-`check` und `rollback` sind optionale Methoden der Basisklasse `Module`. Ein Modul mit umkehrbarer oder prüfbarer Wirkung überschreibt sie; ein Modul ohne solche Wirkung lässt sie unberührt. Sie sind nicht an Systemänderungen gebunden — auch ein Modul, das im Anwendungskontext eine Datei kopiert, kann das Ergebnis prüfen und zurücknehmen.
-
-`check(self) -> bool | None` ist der Überprüfungsmodus: Er prüft den Erfolg der eigenen Aktionen und Eingriffe gezielt und vollständig und gibt das Ergebnis zurück (MOD-12). Der Default liefert `None` und zeigt damit an, dass das Modul keine Überprüfung anbietet; der Aufrufer erkennt das unmittelbar am Rückgabewert, ohne gesondertes Merkmal. `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13); der Default bleibt wirkungslos.
-
-Für den Rollback führt das Modul eine Undo-Registratur: ausgeführte, umkehrbare Eingriffe und die im safe-mode gesicherten Dateien werden darin vermerkt; `rollback` arbeitet die Registratur in umgekehrter Reihenfolge ab. Der Rollback ist eine je Modul bereitzustellende Schnittstelle, keine vom Bausatz garantierte allgemeine Rücknahme beliebiger Systemeingriffe (Bedingung B1 der Machbarkeit).
+Die Methode `check(self) -> bool | None` gibt bei erfolgreicher Bestätigung der Modulaktivitäten 'True' zurück und Fehlerfall 'False'. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, das `check(self)` in diesem Modul nicht implemtiert wurde. Die genauen Test zur Überprüfung müssen in der Methode programmiert werden.
+ 
+Die Methode `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13). War der Rückbau erfolgreich, liefert `rollback(self)` den Wert `True`und im Fehlerfall den Wert `False? zurück. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, das `rollback(self)` in diesem Modul nicht implemtiert wurde. Die genauen Umsetzung des Rollbacks müssen in der Methode programmiert werden.
 
 Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht.
 
