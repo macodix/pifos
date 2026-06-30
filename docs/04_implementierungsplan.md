@@ -181,7 +181,7 @@ classDiagram
 
 `Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt Methoden zur Ausführung und Steuerung von Aktionen sowie zur Interaktion mit dem aufrufenden Prozess zur Verfügung (MOD-05).
 
-Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst. Die formale Prüfung (z. B. 'ist Zahl', 'ist Email-Adresse') kann über die `check_pattern`-Methode (Kapitel 4 „Konfiguration") des `Config`-Objektes durchgeführt werden. Die inhaltlich fachliche Prüfung muss durch eigenen Code in der `Module`-Implementierung erfolgen. Beide Prüfungen können aber auch bereits im Aufrufer erfolgen im Modul oder beim Aufrufer.
+Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst. Die formale Prüfung (z. B. 'ist Zahl', 'ist Email-Adresse') kann über die `check_pattern`-Methode (Kapitel 4 „Konfiguration") des `Config`-Objektes durchgeführt werden. Die inhaltlich fachliche Prüfung muss durch eigenen Code in der `Module`-Implementierung erfolgen. Beide Prüfungen können aber auch bereits im Aufrufer erfolgen.
 
 Über die Methoden `send_message` und `receive_message` kommuniziert das Modul über IPC mit dem aufrufenden Prozess (Kapitel 6 „Prozessmodell, Steuerung und IPC").
 
@@ -201,7 +201,7 @@ Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die We
 
 #### 3.1.1. Implementierung von Module
 
-Module sollen beschreibende Namen erhalten um den Verwendungszweck zu erkennnen, so sollte z. B. ein Installationsmodul könnte den Klassennamen `InstModule`  und/oder den Dateinamen `inst_` erhalten (MOD-07).
+Module sollen beschreibende Namen erhalten um den Verwendungszweck zu erkennnen, so sollte z. B. ein Installationsmodul den Klassennamen `InstModule`  und/oder den Dateinamen `inst_` erhalten (MOD-07).
 
 ##### 3.1.1.1. Konfigurationsdeklaration und Prüfung
 
@@ -211,7 +211,7 @@ Eine formale Prüfung einzelner Konfigurationswerte ist über die `Config`-Metho
 
 ##### 3.1.1.2. Überprüfung und Rollback
 
-Die Methoden `check` und `rollback` sind optional und dienen als standadisierte Aufrufe für Überprüfungen der erfolgreiche Abarbeitung des Modules oder der Zurücknahme der durchgefüherten Aktivitäten e Methoden der Basisklasse `Module`.
+Die Methoden `check` und `rollback` sind optional und dienen als standadisierte Aufrufe für die Überprüfung der erfolgreichen Abarbeitung des Modules oder der Zurücknahme der durchgefüherten Aktivitäten.
 
 Die Methode `check(self) -> bool | None` gibt bei erfolgreicher Bestätigung der Modulaktivitäten 'True' zurück und im Fehlerfall 'False'. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, dass `check(self)` in diesem Modul nicht implementiert wurde. Die genauen Tests zur Überprüfung müssen in der Methode programmiert werden.
  
@@ -223,7 +223,13 @@ Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig un
 
 ## 4. Konfiguration
 
-Die *Konfiguration* ist die Schnittstelle zwischen Anwender und *pifos*. Die Klasse `Config` entkoppelt die Aufrufer vom Quellformat; je Quellformat überführt eine eigene Formatklasse die Konfiguration in ein dict (KFG-01, KFG-04). Dieses Kapitel beschreibt das Config-Objekt mit seinen formalen Prüfmustern, die Formatklassen mit Lese- und Schreibweg und die Absicherung des Ladens.
+Die *Konfiguration* ist die Schnittstelle zwischen Anwender und *pifos*, d.h. die Module und Aktionen werden im Wesnetlichen durch Konfigurationen bzw. durch Einträge  Konfigurationsdateien gesteuert.
+
+Für die unterschiedlichen Formate der Konfigurationsdateien (z. B. *.toml, *.ini, *.json) gibt es eigene Formatklassen die von der `Config`-Klasse genutzt werden um die Konfigurationswerte in einem Dictionary abzulegen. (KFG-01, KFG-04).
+
+Darüber hinaus stellt die `Config`-Klasse eine Reihe von Zugriffsmethoden auf die Konfiguration zur Verfügung und bietet mit der Mehtode `check_pattern(self)` die Möglichkeite zu einer formalen Prüfung der Konfigurationswerte.
+
+Zusätzlich bietet die `Config`-Klasse auch die Möglichkeit Konfigurationsdateien mit Hilfe der Formatklassen in unterschiedlichen Formaten zu speichern.
 
 Das folgende Klassendiagramm zeigt die Klasse `Config` und die je Quellformat zuliefernden Formatklassen.
 
@@ -256,7 +262,7 @@ classDiagram
 
 ### 4.1 Config-Objekt
 
-`Config` im Unterpaket `config/` ist die zentrale Schnittstelle zwischen Konfigurationen und Aufrufern (KFG-01). Sie hält die Konfiguration intern als einfache Strukturen (dict, list), damit sie über die Prozessgrenze an einen Modulprozess übergeben werden kann (Kapitel 6 „Prozessmodell, Steuerung und IPC", Bedingung B3 der Machbarkeit).
+Die `Config`-Klasse im Unterpaket `config/` hält die Konfiguration intern als einfache Strukturen (dict, list) vor.
 
 | Methode | Zweck |
 |---------|-------|
@@ -267,13 +273,15 @@ classDiagram
 | `get_list(self, key: str, sort: bool = False) -> list` | liefert eine sortierte oder unsortierte Liste (KFG-02) |
 | `check_pattern(self, pattern: str, value) -> bool` | wendet ein formales Prüfmuster auf einen Wert an (KFG-09) |
 
-Eine inhaltliche Prüfung der Konfigurationsdaten findet nicht statt (KFG-08). `check_pattern` stellt formale Prüfmuster bereit, etwa vorhanden, nicht leer, ist Zahl, ist Liste, ist kommasepariert, syntaktisch gültige Mailadresse (KFG-09). Der Katalog wird bedarfsgetrieben gefüllt, ausgehend von den in den ersten Modulen benötigten Prüfungen.
+Eine inhaltliche Prüfung der Konfigurationsdaten findet nicht statt (KFG-08). 
 
-Eine formale Prüfung läuft so ab: `Config` lädt die Datei und liefert die Werte über `get_value`, `get_section` und `get_list`. Modul oder Aufrufer nimmt einen Wert und prüft ihn mit `check_pattern(pattern, wert)`, etwa `check_pattern("fqdn", wert)`; bei `False` lehnt die prüfende Stelle den Wert ab. Die inhaltliche Prüfung — erlaubter Wertebereich, Positivliste — liegt bei der verwendenden Stelle, bevorzugt beim Aufrufer (SIC-01, SIC-02).
+Die Methode `check_pattern` stellt formale Prüfmuster bereit (z. B. 'vorhanden', 'nicht leer', 'ist Zahl', 'ist Liste', 'ist kommasepariert', 'syntaktisch gültige Mailadresse') (KFG-09). 
+
+Die formale Prüfung läuft nicht automatisiert, sondern muss für jeden zu prüfenden Konfigurationwert aufgerufen werden. Die verfügbaren Prüfpattern erhalten Namen, die beim Aufruf der Methode angegeben werden (`pattern`).
 
 ### 4.2 Formatklassen
 
-Für jede genutzte Konfigurationsart gibt es eine eigene Klasse, die die Konfiguration standardisiert an `Config` übergibt (KFG-04). Jede Formatklasse bietet beide Richtungen: `to_dict()` liest die Quelle in ein dict, ein Schreibweg überführt ein dict zurück in eine Datei. Den unzerlegten Inhalt liefert der raw-Zugang (KFG-06).
+Für jedes genutzte Konfigurationsformat gibt es eine eigene Klasse, welche die Konfiguration standardisiert an `Config` übergibt (KFG-04). Jede Formatklasse bietet sowohl lesenden Zugriff (`to_dict()`) als auch schreibenden Zugriff () bietet beide Richtungen: `to_dict()` liest die Quelle in ein dict, ein Schreibweg überführt ein dict zurück in eine Datei. Den unzerlegten Inhalt liefert der raw-Zugang (KFG-06).
 
 | Format | Klasse | Lesen | Schreiben |
 |--------|--------|-------|-----------|
