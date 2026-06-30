@@ -122,7 +122,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 |---------|--------------|-----------|
 | `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück) |
 
-Das Klassenattribut `PARAMS: list[str]` nennt die Namen der Parameter, die die Aktion erwartet. Das aufrufende Modul gleicht die übergebenen Parameter damit auf Vollständigkeit ab (`check_action_params`, Kapitel 3 „Module"); die formale Prüfung der Werte erfolgt bei Bedarf über `check_pattern` (Kapitel 4 „Konfiguration"), die inhaltliche im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
+Das Klassenattribut `PARAMS: list[str]` nennt die Namen der Parameter, die die Aktion erwartet. Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst — formal über `check_pattern` (Kapitel 4 „Konfiguration"), inhaltlich im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
 
 
 ### 2.1.1 Implementierung von Action
@@ -160,7 +160,6 @@ classDiagram
         +run_action()
         +control_action()
         +resolve_action()
-        +check_action_params()
         +send_message()
         +receive_message()
         +check()
@@ -186,7 +185,6 @@ Das Klassenattribut `CONFIG: list[str]` nennt die Namen der benötigten Konfigur
 | `run_action(self, action: Action) -> int` | führt eine Aktion aus und übernimmt deren Status (MOD-01) |
 | `control_action(self, action, **options) -> None` | steuert eine Aktion über Parameter oder Instanzvariablen (MOD-06) |
 | `resolve_action(self, name: str) -> type[Action]` | schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse; Fehler, wenn sie nicht existiert (MOD-05) |
-| `check_action_params(self, name: str, params: dict) -> None` | gleicht die übergebenen Parameter auf Vollständigkeit mit den in `PARAMS` genannten Namen der Aktion ab; eigenständig aufrufbar (MOD-05) |
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
 | `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
@@ -194,7 +192,7 @@ Das Klassenattribut `CONFIG: list[str]` nennt die Namen der benötigten Konfigur
 
 `send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6 „Prozessmodell, Steuerung und IPC"); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
 
-`resolve_action` schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse oder meldet einen Fehler, wenn es sie nicht gibt; `check_action_params` gleicht die übergebenen Parameter mit den in `PARAMS` genannten Namen der Aktion ab. Beide liegen in der Basisklasse, damit jedes Modul Aktionen einheitlich auflöst und prüft, statt diese Mechanik selbst zu wiederholen (MOD-05). Die Parameter-Prüfung ist eine eigene Methode und damit auch ohne vorheriges Auflösen nutzbar. Wie das Aktions-Verzeichnis gefüllt wird, hängt vom konkreten Aktionssatz ab und wird festgelegt, sobald dieser feststeht (ÜBR-05).
+`resolve_action` schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse oder meldet einen Fehler, wenn es sie nicht gibt. Die Methode liegt in der Basisklasse, damit jedes Modul Aktionen einheitlich auflöst, statt diese Mechanik selbst zu wiederholen (MOD-05). Wie das Aktions-Verzeichnis gefüllt wird, hängt vom konkreten Aktionssatz ab und wird festgelegt, sobald dieser feststeht (ÜBR-05).
 
 ### 3.2 Konfigurationsdeklaration und Prüfung
 
@@ -488,3 +486,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.14 | 2026-06-29 | Claude | Zentrale Aktions-Auflösung in `Module` ergänzt: `resolve_action` (Existenz/Klasse aus dem Aktions-Verzeichnis) und getrennt `check_action_params` (Parameter gegen die Aktions-Deklaration); Mechanik einmal in der Basisklasse statt je Modul. Füllung des Verzeichnisses als Detail vertagt. |
 | 0.15 | 2026-06-29 | Claude | Parameter-Deklaration in `Action` ergänzt: Klassenattribut `PARAMS: list[ConfigItem]` (Name, Verbindlichkeit, Vorgabe, Prüfung, Beschreibung je Parameter, Struktur wie `Module.CONFIG`); Grundlage für `check_action_params`. |
 | 0.16 | 2026-06-30 | Claude | Konfigurations-/Parameter-Deklaration vereinfacht (Entscheidung Martin): `CONFIG` und `PARAMS` sind reine Namenslisten (`list[str]`); `ConfigItem` samt Abschnitt 4.3 und Diagrammklasse entfernt, Abschnitt „Absicherung des Ladens" auf 4.3 aufgerückt. Pflicht/Kann, Vorgabewert und inhaltliche Prüfung liegen im Modul bzw. Aufrufer; `check_config`/`check_action_params` auf Vorhandensein bzw. Vollständigkeit reduziert. `check_pattern`-Ablauf ergänzt, Parameter `name`→`pattern`. |
+| 0.17 | 2026-06-30 | Claude | `check_action_params` aus `Module` gestrichen (Entscheidung Martin); nach der Vereinfachung auf Namenslisten blieb nur ein Namensabgleich. In `Module` verbleibt `resolve_action`; die Parameter-Werte prüft das Modul oder der Aufrufer selbst. |
