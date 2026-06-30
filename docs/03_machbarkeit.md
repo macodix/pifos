@@ -34,7 +34,7 @@ Eine Aktion ist eine Python-Klasse für genau eine atomare Aufgabe mit voller Ko
 
 ## 3. Module
 
-Ein Modul erledigt eine Aufgabe über Aktionen, erbt von einer gemeinsamen Elternklasse und erhält seine Parameter als Config-Objekt (MOD-01 bis MOD-11). Die deklarative Konfiguration als Klassenattribut mit Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung ist über eine dataclass je Eintrag abbildbar; die Prüfung der eingehenden Werte beim Start folgt der Deklaration. Vererbung, Klassenvariablen und beschreibende Namen sind unmittelbar machbar.
+Ein Modul erledigt eine Aufgabe über Aktionen, erbt von einer gemeinsamen Elternklasse und erhält seine Parameter als Config-Objekt (MOD-01 bis MOD-11). Die deklarative Konfiguration als Klassenattribut — eine Liste der Namen der benötigten Werte — und die Prüfung des Vorhandenseins beim Start sind unmittelbar machbar. Vererbung, Instanzvariablen und beschreibende Namen ebenso.
 
 Der Überprüfungsmodus (MOD-12) prüft den Erfolg der eigenen Aktionen und ist als Methode je systemveränderndem Modul umsetzbar. Der Rollback-Mechanismus (MOD-13) ist die einzige Stelle mit Auslegungsspielraum: pifos kann die Schnittstelle und die Pflicht zu einer rollback-Methode als Konvention oder Basisklasse vorgeben, die fachliche Rücknahme eines Eingriffs leistet aber das konkrete Modul, gestützt auf die Sicherung aus dem safe-mode der Aktionen. Eine vom Bausatz garantierte, universelle Rücknahme beliebiger Systemeingriffe ist nicht möglich und auch nicht gefordert. Die Idempotenz-Erkennung (MOD-14) ist KANN und modulabhängig.
 
