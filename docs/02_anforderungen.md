@@ -120,9 +120,9 @@ Ein Modul macht nachvollziehbar sichtbar, welche Konfiguration es benötigt.
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
-| MOD-08 | MUSS | Ein Modul deklariert die benötigte Konfiguration als Klassenattribut, das je Eintrag Name, Verbindlichkeit (Pflicht/Kann), Vorgabewert, Prüfung und Beschreibung trägt. |
-| MOD-09 | MUSS | Ein Modul prüft die eingehenden Konfigurationswerte beim Start anhand seiner Deklaration und legt sie danach in seinen Instanzvariablen ab. |
-| MOD-10 | MUSS | Die Deklaration unterscheidet zwischen Pflicht- und Kann-Werten. |
+| MOD-08 | MUSS | Ein Modul nennt die benötigten Konfigurationswerte als Klassenattribut (Liste der Namen). |
+| MOD-09 | MUSS | Ein Modul prüft beim Start das Vorhandensein der benötigten Konfigurationswerte und legt sie in seinen Instanzvariablen ab. |
+| MOD-10 | MUSS | Ein Modul behandelt Pflicht- und Kann-Werte: ein fehlender Pflichtwert führt zum Fehler, ein fehlender Kann-Wert erhält einen Vorgabewert. |
 | MOD-11 | KANN | Ein Modul enthält sinnfällige Vorgabewerte, wann immer möglich. |
 
 ### 5.3 Systemverändernde Module
@@ -143,11 +143,12 @@ Die Konfiguration ist die Schnittstelle zwischen Anwender und pifos. Sie wird ü
 
 Das Config-Objekt vermittelt zwischen Konfigurationsquellen und Aufrufern.
 
+Die Nummer KFG-03 ist nicht vergeben; sie forderte eine Klasse zur Deklaration einzelner Konfigurationseinträge, die mit der Vereinfachung der Modul-Deklaration auf reine Namenslisten entfällt.
+
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
 | KFG-01 | MUSS | Eine Config-Klasse bildet die zentrale Schnittstelle zwischen Konfigurationen und den aufrufenden Programmen. |
 | KFG-02 | MUSS | Die Config-Klasse stellt Methoden bereit, um dem Aufrufer Konfiguration in verschiedenen Formen zu liefern: einzelne Werte, Sektionen als dict oder list sowie sortierte und unsortierte Listen. |
-| KFG-03 | MUSS | pifos stellt eine Klasse zur Definition einzelner Konfigurationseinträge bereit. |
 
 ### 6.2 Konfigurationsformate
 
@@ -367,5 +368,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.07 | 2026-06-29 | Claude | Rechte-Anforderungen korrigiert: SIC-10 und SIC-11 (Prozessrechte) gestrichen, da pifos als Bausatz keine eigenen Prozessrechte hat; Kapitel 13.4 auf den Code-Baum (SIC-12) fokussiert; neue SIC-27 (Logfile mit engen Rechten 0600) ergänzt. SIC-10/11 bleiben als Lücke unbesetzt. |
 | 0.08 | 2026-06-29 | Claude | Hinweis in der Einleitung von Kapitel 13 ergänzt: SIC-10 und SIC-11 sind nicht vergeben (gestrichene Prozessrechte-Anforderungen). |
 | 0.09 | 2026-06-29 | Claude | ÜBR-04 (Attributzugriff) von MUSS auf KANN herabgestuft und als Empfehlung gefasst — direkter Zugriff, `@property` optional bei Prüfung/Berechnung; Attributzugriff ist Stilfrage, keine Pflicht. |
+| 0.10 | 2026-06-30 | Claude | Konfigurations-Deklaration vereinfacht (Entscheidung Martin): MOD-08 auf reine Namensliste, MOD-09 auf Vorhandensein, MOD-10 von Deklaration auf Modul-Verhalten umgestellt; KFG-03 (Klasse für einzelne Konfigurationseinträge) gestrichen, Nummer bleibt unbesetzt, Hinweis in Kapitel 6 ergänzt. |
 </content>
 </invoke>
