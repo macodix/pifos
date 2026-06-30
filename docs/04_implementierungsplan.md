@@ -197,6 +197,7 @@ Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die We
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
 | `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
+| `rollback(self) -> bool \| None` | optional: nimmt die Eingriffe zurück und meldet, ob der Rückbau gelang; Default `None` (kein Rollback), ein Modul mit umkehrbarer Wirkung überschreibt sie (MOD-13) |
 
 #### 3.1.1. Implementierung von Module
 
@@ -214,7 +215,7 @@ Die Methoden `check` und `rollback` sind optional und dienen als standadisierte 
 
 Die Methode `check(self) -> bool | None` gibt bei erfolgreicher Bestätigung der Modulaktivitäten 'True' zurück und im Fehlerfall 'False'. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, dass `check(self)` in diesem Modul nicht implementiert wurde. Die genauen Tests zur Überprüfung müssen in der Methode programmiert werden.
  
-Die Methode `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13). War der Rückbau erfolgreich, liefert `rollback(self)` den Wert `True` und im Fehlerfall den Wert `False` zurück. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, dass `rollback(self)` in diesem Modul nicht implementiert wurde. Die genaue Umsetzung des Rollbacks muss in der Methode programmiert werden.
+Die Methode `rollback(self) -> bool | None` nimmt die Eingriffe zurück (MOD-13). War der Rückbau erfolgreich, liefert `rollback(self)` den Wert `True` und im Fehlerfall den Wert `False` zurück. Per default liefert die nicht überschriebene Methode 'None' zurück und zeigt damit an, dass `rollback(self)` in diesem Modul nicht implementiert wurde. Die genaue Umsetzung des Rollbacks muss in der Methode programmiert werden.
 
 Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht.
 
@@ -498,3 +499,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.18 | 2026-06-30 | macodix | Konsistenzbefunde behoben: Dateiverweis `05`→`06_bereitstellung.md` (4.2); ins Leere zeigenden safe-mode-Kapitelzeiger in 3.3 entfernt; `run`-Rückgabe in der Tabelle (2.1) auf `int` vereinheitlicht; `stdout`/`stderr`/`returncode` in 2.1.1 als Instanzvariablen benannt; `obj.x` (1.2); `MOD-01` (1.1). |
 | 0.19 | 2026-06-30 | macodix | `run`-Rückgabe zurück auf den Status (`str`, `obj.status`): Tabelle 2.1 und Signatur in 2.1.1 angeglichen (Korrektur zu 0.18, Entscheidung Martin). |
 | 0.20 | 2026-06-30 | macodix | Rechtschreib- und Tippfehler in den Kapiteln 1–3 korrigiert; doppelte Abschnittsnummer 3.1.1.1→3.1.1.2; toten IPC-Halbsatz in 3.1 entfernt. Grammatikalisch unklare Sätze und Konsistenzpunkte (u. a. `rollback`-Signatur) zur Klärung unangetastet gelassen. |
+| 0.21 | 2026-06-30 | macodix | `rollback`-Signatur auf `bool \| None` gezogen (passend zum Text und zu `check`); `rollback`-Zeile in der Methodentabelle von 3.1 ergänzt. |
