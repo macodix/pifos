@@ -110,7 +110,12 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 ### 2.1 Basisklasse Action
 
-`Action` ist eine abstrakte Basisklasse (`action.Action`) in `action.py`. Sie hält den Ausführungszustand in Instanzvariablen und schreibt jeder konkreten Aktion eine `run`-Methode vor.
+`Action` ist eine abstrakte Basisklasse (`action.Action`) in `action.py`. Die konkreten Implementierungen der `Action`-Klasse erhalten die erforderlichen Parameter vom aufrufenden Modul Das Klassenattribut `PARAMS: list[str]` enthält die Namen der erlaubten Parameter. Bei einer Aktionen die keine Parameter erfordern bleibt `PARAMS` leer.Die `Action`-Klasse legt den Ausführungszustand in der Instanzvariablen `status` ab. Die `run`-Methode enthält die jeweilige konret auszuführende Aktion. 
+
+**HINWEIS**
+
+`Action` überprüft die Parameter NICHT. D. h. die `Action`-Klassen gehen davon aus, dass die Werte VORHER geprüft und validiert wurden!
+
 
 | Variable | Typ | Bedeutung |
 |----------|-----|-----------|
@@ -122,14 +127,11 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 |---------|--------------|-----------|
 | `run`(self) | `int` | Führt die konkrete Aktion aus und setzt den Status |
 
-Das Klassenattribut `PARAMS: list[str]` nennt die Namen der Parameter, die die Aktion erwartet. Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst — formal über `check_pattern` (Kapitel 4 „Konfiguration"), inhaltlich im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
 
 
 ### 2.1.1 Implementierung von Action
 
 Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgabe enthalten.
-
-
 
 Die Methode `run(self) -> int` beinhaltet bei konkrete Implementlierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
 
@@ -140,9 +142,8 @@ Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Instanzvar
 
 ## 3. Module
 
-Dieses Kapitel beschreibt die Basisklasse `Module` und deren (deklarative) Konfiguration.
+Ein *Modul* ist eine Klasse vom Tpy *Modul* und dient zur fachlichen korrekten Abarbeitung von ein oder mehrerer Aktionen. Sie erhält als Parameter ein `Config`-Objekt vom aufrufenden Prozess. Für die Durchführung seine Aufgabe nutzen Module die *Aktionen* (MOD-01, MOD-02, MOD-05).
 
-Ein *Modul* ist eine Klasse vom Tpy *Modul*, führt seine Aufgabe mit Hilfe der *Aktionen* durch und erhält als Parameter ein `Config`-Objekt (MOD-01, MOD-02, MOD-05).
 Die Basisklasse `Module` stellt auch die optionalen Methoden `check`, zur Überprüfung von Aktionen, und `rollback`, zum Rückbau der Aktion, bereit, welche bei Nutzung überschrieben werde müsssen (MOD-12, MOD-13).
 
 Das folgende Klassendiagramm zeigt die Basisklasse `Module` mit einem konkreten Beispiel-Modul sowie die Komposition mit `Action`.
@@ -174,9 +175,13 @@ classDiagram
 
 ### 3.1 Basisklasse Module
 
-`Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt das gemeinsame Grundset bereit: Zugriff auf die Systemumgebung, das Ausführen und Steuern von Aktionen sowie die Interaktion mit dem aufrufenden Prozess (MOD-05).
+`Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt Methoden Mehoden zu Ausführung und Steuerung von Aktionen sowie zur Interaktion mit dem aufrufendem Prozss zur Verfügung (MOD-05).
 
-Das Klassenattribut `CONFIG: list[str]` nennt die Namen der benötigten Konfigurationswerte (MOD-08); leer bei Modulen ohne Konfiguration (MOD-03). Die Instanzvariable `loglevel` trägt das vom Aufrufer übergebene Loglevel (LOG-05). Die geprüften Konfigurationswerte legt das Modul in eigenen Instanzvariablen ab (MOD-04).
+Eine Modul versorgt die Aktionen mit den notwendigen Parameter
+
+Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst — formal über `check_pattern` (Kapitel 4 „Konfiguration"), inhaltlich im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
+
+
 
 | Methode | Zweck |
 |---------|-------|
