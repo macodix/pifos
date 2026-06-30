@@ -30,7 +30,7 @@ Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert.
 | `action.py` | abstrakte Basisklasse `Action` |
 | `actions/` (Unterpaket) | generische Aktionen, u. a. `SysCmdAction`, `CopyFileAction` |
 | `module.py` | abstrakte Basisklasse `Module` |
-| `config/` (Unterpaket) | `Config`, `ConfigItem`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
+| `config/` (Unterpaket) | `Config`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
 | `caller.py` | abstrakte Basisklasse `PifosCaller` |
 | `ipc.py` | `IpcMessage`, Enums `MessageKind`, `LogLevel` |
 | `runner.py` | Einsprungfunktion des Modulprozesses |
@@ -115,14 +115,14 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 | Variable | Typ | Bedeutung |
 |----------|-----|-----------|
 | `status` | `str` | Zustand der Ausführungm, *not_runnned*, *running*, *finished* oder *failed*, Default: *not_runnned* |
-| `PARAMS` | `list[ConfigItem]` | Klassenattribut: deklariert die Parameter der Aktion; leer, wenn die Aktion keine Parameter hat |
+| `PARAMS` | `list[str]` | Klassenattribut: Namen der Parameter der Aktion; leer, wenn die Aktion keine Parameter hat |
 
 
 | Methode | Rückgabewert | Bedeutung |
 |---------|--------------|-----------|
 | `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück) |
 
-Das Klassenattribut `PARAMS: list[ConfigItem]` deklariert die Parameter der Aktion — je Parameter Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung, dieselbe Struktur wie `Module.CONFIG` (Kapitel 4 „Konfiguration"). Anhand dieser Deklaration prüft das aufrufende Modul übergebene Parameter, bevor es die Aktion nutzt (`check_action_params`, Kapitel 3 „Module"). Eine Aktion ohne Parameter lässt `PARAMS` leer.
+Das Klassenattribut `PARAMS: list[str]` nennt die Namen der Parameter, die die Aktion erwartet. Das aufrufende Modul gleicht die übergebenen Parameter damit auf Vollständigkeit ab (`check_action_params`, Kapitel 3 „Module"); die formale Prüfung der Werte erfolgt bei Bedarf über `check_pattern` (Kapitel 4 „Konfiguration"), die inhaltliche im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
 
 
 ### 2.1.1 Implementierung von Action
@@ -153,7 +153,7 @@ classDiagram
 
     class Module {
         <<abstract>>
-        +CONFIG : list~ConfigItem~
+        +CONFIG : list~str~
         +loglevel
         +start()*
         +check_config()
@@ -177,7 +177,7 @@ classDiagram
 
 `Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt das gemeinsame Grundset bereit: Zugriff auf die Systemumgebung, das Ausführen und Steuern von Aktionen sowie die Interaktion mit dem aufrufenden Prozess (MOD-05).
 
-Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfiguration (MOD-08); leer bei Modulen ohne Konfiguration (MOD-03). Die Instanzvariable `loglevel` trägt das vom Aufrufer übergebene Loglevel (LOG-05). Die geprüften Konfigurationswerte legt das Modul in eigenen Instanzvariablen ab (MOD-04).
+Das Klassenattribut `CONFIG: list[str]` nennt die Namen der benötigten Konfigurationswerte (MOD-08); leer bei Modulen ohne Konfiguration (MOD-03). Die Instanzvariable `loglevel` trägt das vom Aufrufer übergebene Loglevel (LOG-05). Die geprüften Konfigurationswerte legt das Modul in eigenen Instanzvariablen ab (MOD-04).
 
 | Methode | Zweck |
 |---------|-------|
@@ -186,7 +186,7 @@ Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfigu
 | `run_action(self, action: Action) -> int` | führt eine Aktion aus und übernimmt deren Status (MOD-01) |
 | `control_action(self, action, **options) -> None` | steuert eine Aktion über Parameter oder Instanzvariablen (MOD-06) |
 | `resolve_action(self, name: str) -> type[Action]` | schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse; Fehler, wenn sie nicht existiert (MOD-05) |
-| `check_action_params(self, name: str, params: dict) -> None` | prüft die Parameter gegen die Deklaration der Aktion; eigenständig aufrufbar (MOD-05) |
+| `check_action_params(self, name: str, params: dict) -> None` | gleicht die übergebenen Parameter auf Vollständigkeit mit den in `PARAMS` genannten Namen der Aktion ab; eigenständig aufrufbar (MOD-05) |
 | `send_message(self, level, name, payload) -> None` | reicht eine Meldung an den Aufrufer (LOG-02) |
 | `receive_message(self) -> IpcMessage` | nimmt einen Befehl des Aufrufers an (STR-04) |
 | `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
@@ -194,13 +194,13 @@ Das Klassenattribut `CONFIG: list[ConfigItem]` deklariert die benötigte Konfigu
 
 `send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6 „Prozessmodell, Steuerung und IPC"); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
 
-`resolve_action` schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse oder meldet einen Fehler, wenn es sie nicht gibt; `check_action_params` prüft übergebene Parameter gegen die Deklaration der jeweiligen Aktion. Beide liegen in der Basisklasse, damit jedes Modul Aktionen einheitlich auflöst und prüft, statt diese Mechanik selbst zu wiederholen (MOD-05). Die Parameter-Prüfung ist eine eigene Methode und damit auch ohne vorheriges Auflösen nutzbar. Wie das Aktions-Verzeichnis gefüllt wird, hängt vom konkreten Aktionssatz ab und wird festgelegt, sobald dieser feststeht (ÜBR-05).
+`resolve_action` schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse oder meldet einen Fehler, wenn es sie nicht gibt; `check_action_params` gleicht die übergebenen Parameter mit den in `PARAMS` genannten Namen der Aktion ab. Beide liegen in der Basisklasse, damit jedes Modul Aktionen einheitlich auflöst und prüft, statt diese Mechanik selbst zu wiederholen (MOD-05). Die Parameter-Prüfung ist eine eigene Methode und damit auch ohne vorheriges Auflösen nutzbar. Wie das Aktions-Verzeichnis gefüllt wird, hängt vom konkreten Aktionssatz ab und wird festgelegt, sobald dieser feststeht (ÜBR-05).
 
 ### 3.2 Konfigurationsdeklaration und Prüfung
 
-Ein Modul macht über `CONFIG` sichtbar, welche Konfiguration es benötigt (MOD-08). Jeder Eintrag ist ein `ConfigItem` (Kapitel 4 „Konfiguration") mit Name, Verbindlichkeit, Vorgabewert, Prüfung und Beschreibung. Die Deklaration unterscheidet Pflicht- von Kann-Werten über das Feld `required` (MOD-10). Wo möglich, trägt ein Eintrag einen sinnfälligen Vorgabewert (MOD-11).
+Ein Modul macht über `CONFIG` sichtbar, welche Konfigurationswerte es benötigt — eine Liste der Namen (MOD-08). Welche davon Pflicht sind, welche einen Vorgabewert haben und wie sie geprüft werden, regelt das Modul in seinem Code (MOD-10, MOD-11); es gibt dafür keine eigene Deklarationsstruktur.
 
-Beim Start prüft `check_config` die eingehenden Werte anhand der Deklaration: Pflichtwerte müssen vorhanden sein, fehlende Kann-Werte erhalten ihren Vorgabewert, und das Feld `check` wird angewendet (MOD-09). Die Prüfung ist formal, nicht inhaltlich (KFG-08). Werte, die das Modul anschließend als Argument eines Systembefehls oder als Dateipfad verwendet, prüft es vor dieser Verwendung auf Typ, Format und Wertebereich anhand einer Positivliste, da der Konfigurationsbaustein keine inhaltliche Prüfung vornimmt (SIC-01, SIC-02). Nach erfolgreicher Prüfung legt das Modul die Werte in seinen Instanzvariablen ab (MOD-04).
+Beim Start prüft `check_config` das Vorhandensein der in `CONFIG` genannten Werte und legt sie in den Instanzvariablen des Moduls ab (MOD-09, MOD-04). Pflicht- und Kann-Behandlung sowie Vorgabewerte regelt das Modul selbst (MOD-10, MOD-11); eine formale Prüfung einzelner Werte ist über `check_pattern` möglich (Kapitel 4 „Konfiguration"). Werte, die anschließend als Argument eines Systembefehls oder als Dateipfad dienen, prüft die verwendende Stelle vorher auf Typ, Format und Wertebereich anhand einer Positivliste (SIC-01, SIC-02) — bevorzugt der Aufrufer, dort, wo die Eingabe vorkommt.
 
 ### 3.3 Überprüfung und Rollback
 
@@ -216,9 +216,9 @@ Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig un
 
 ## 4. Konfiguration
 
-Die *Konfiguration* ist die Schnittstelle zwischen Anwender und *pifos*. Die Klasse `Config` entkoppelt die Aufrufer vom Quellformat; je Quellformat überführt eine eigene Formatklasse die Konfiguration in ein dict (KFG-01, KFG-04). Einzelne Einträge beschreibt die dataclass `ConfigItem` (KFG-03). Dieses Kapitel beschreibt das Config-Objekt, die Formatklassen mit Lese- und Schreibweg, `ConfigItem` mit dem Prüffeld und die Absicherung des Ladens.
+Die *Konfiguration* ist die Schnittstelle zwischen Anwender und *pifos*. Die Klasse `Config` entkoppelt die Aufrufer vom Quellformat; je Quellformat überführt eine eigene Formatklasse die Konfiguration in ein dict (KFG-01, KFG-04). Dieses Kapitel beschreibt das Config-Objekt mit seinen formalen Prüfmustern, die Formatklassen mit Lese- und Schreibweg und die Absicherung des Ladens.
 
-Das folgende Klassendiagramm zeigt die Klasse `Config`, die je Quellformat zuliefernden Formatklassen und die dataclass `ConfigItem`.
+Das folgende Klassendiagramm zeigt die Klasse `Config` und die je Quellformat zuliefernden Formatklassen.
 
 ```mermaid
 classDiagram
@@ -232,14 +232,6 @@ classDiagram
         +load_raw()
         +check_pattern()
     }
-    class ConfigItem {
-        <<dataclass>>
-        +name
-        +required
-        +default
-        +check
-        +description
-    }
     class IniConfig {
         +to_dict()
     }
@@ -250,7 +242,6 @@ classDiagram
         +to_dict()
     }
 
-    Config ..> ConfigItem : nutzt
     Config <-- IniConfig : liefert dict/raw
     Config <-- TomlConfig : liefert dict/raw
     Config <-- JsonConfig : liefert dict/raw
@@ -267,9 +258,11 @@ classDiagram
 | `get_value(self, key: str)` | liefert einen Einzelwert (KFG-02) |
 | `get_section(self, name: str) -> dict \| list` | liefert eine Sektion als dict oder list (KFG-02) |
 | `get_list(self, key: str, sort: bool = False) -> list` | liefert eine sortierte oder unsortierte Liste (KFG-02) |
-| `check_pattern(self, name: str, value) -> bool` | wendet ein formales Prüfmuster an (KFG-09) |
+| `check_pattern(self, pattern: str, value) -> bool` | wendet ein formales Prüfmuster auf einen Wert an (KFG-09) |
 
 Eine inhaltliche Prüfung der Konfigurationsdaten findet nicht statt (KFG-08). `check_pattern` stellt formale Prüfmuster bereit, etwa vorhanden, nicht leer, ist Zahl, ist Liste, ist kommasepariert, syntaktisch gültige Mailadresse (KFG-09). Der Katalog wird bedarfsgetrieben gefüllt, ausgehend von den in den ersten Modulen benötigten Prüfungen.
+
+Eine formale Prüfung läuft so ab: `Config` lädt die Datei und liefert die Werte über `get_value`, `get_section` und `get_list`. Modul oder Aufrufer nimmt einen Wert und prüft ihn mit `check_pattern(pattern, wert)`, etwa `check_pattern("fqdn", wert)`; bei `False` lehnt die prüfende Stelle den Wert ab. Die inhaltliche Prüfung — erlaubter Wertebereich, Positivliste — liegt bei der verwendenden Stelle, bevorzugt beim Aufrufer (SIC-01, SIC-02).
 
 ### 4.2 Formatklassen
 
@@ -285,21 +278,7 @@ ini und json lesen und schreiben mit der Standardbibliothek und bilden den schre
 
 ini ist das primäre Format, weil es mit Bordmitteln liest und schreibt, von Hand editierbar ist und seine Sektionen Module natürlich abbilden; json ergänzt es für verschachtelte oder maschinennahe Konfiguration. Welches Format ein Aufrufer nutzt, bestimmt er selbst.
 
-### 4.3 ConfigItem
-
-`ConfigItem` ist eine dataclass im Unterpaket `config/` (KFG-03). Sie beschreibt einen einzelnen Konfigurationseintrag und dient zugleich der Deklaration in `CONFIG` der Module (MOD-08).
-
-| Feld | Typ | Bedeutung |
-|------|-----|-----------|
-| `name` | `str` | Name des Eintrags |
-| `required` | `bool` | Pflicht- oder Kann-Wert (MOD-10) |
-| `default` | `object` | Vorgabewert für Kann-Werte (MOD-11) |
-| `check` | `Callable[[object], bool] \| str \| None` | Prüfung des Werts |
-| `description` | `str` | Beschreibung für Anzeige und Konfigurator |
-
-`check` trägt entweder ein aufrufbares Prädikat, das einen Wert annimmt und `bool` zurückgibt, oder den Namen eines formalen Prüfmusters der `Config`-Klasse (KFG-09). Das Modul wendet `check` beim Start an (MOD-09). Die Prüfung ist formal, nicht inhaltlich (KFG-08). Das deklarative Feld ist zugleich für den Konfigurator les- und anzeigbar.
-
-### 4.4 Absicherung des Ladens
+### 4.3 Absicherung des Ladens
 
 Beim Einlesen von Konfigurationsquellen sind Pfad, Format und Größe zu kontrollieren. Der Pfad zu einer Konfigurationsquelle wird vor dem Laden geprüft und auf den vorgesehenen Bereich begrenzt (SIC-16). Die Formatklassen lesen mit `configparser`, `json` und `tomllib`; alle drei verarbeiten nur Daten und führen keine Deserialisierung aus, die Code ausführen kann (SIC-17). Beim Einlesen gilt eine Größengrenze, um übergroße Quellen abzuweisen (SIC-18).
 
@@ -508,3 +487,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.13 | 2026-06-29 | macodix | Zwischenklasse `SystemChangingModule` aufgelöst: `check` und `rollback` als optionale Methoden in die Basisklasse `Module` aufgenommen (`check(self) -> bool \| None`, Default `None`); Abschnitt 3.3 auf „Überprüfung und Rollback" umgestellt, Klassendiagramm, Kapiteleinleitung und Modul-Tabelle nachgezogen. |
 | 0.14 | 2026-06-29 | macodix | Zentrale Aktions-Auflösung in `Module` ergänzt: `resolve_action` (Existenz/Klasse aus dem Aktions-Verzeichnis) und getrennt `check_action_params` (Parameter gegen die Aktions-Deklaration); Mechanik einmal in der Basisklasse statt je Modul. Füllung des Verzeichnisses als Detail vertagt. |
 | 0.15 | 2026-06-29 | macodix | Parameter-Deklaration in `Action` ergänzt: Klassenattribut `PARAMS: list[ConfigItem]` (Name, Verbindlichkeit, Vorgabe, Prüfung, Beschreibung je Parameter, Struktur wie `Module.CONFIG`); Grundlage für `check_action_params`. |
+| 0.16 | 2026-06-30 | macodix | Konfigurations-/Parameter-Deklaration vereinfacht (Entscheidung Martin): `CONFIG` und `PARAMS` sind reine Namenslisten (`list[str]`); `ConfigItem` samt Abschnitt 4.3 und Diagrammklasse entfernt, Abschnitt „Absicherung des Ladens" auf 4.3 aufgerückt. Pflicht/Kann, Vorgabewert und inhaltliche Prüfung liegen im Modul bzw. Aufrufer; `check_config`/`check_action_params` auf Vorhandensein bzw. Vollständigkeit reduziert. `check_pattern`-Ablauf ergänzt, Parameter `name`→`pattern`. |
