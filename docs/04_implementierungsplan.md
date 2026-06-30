@@ -125,7 +125,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 | Methode | Rückgabewert | Bedeutung |
 |---------|--------------|-----------|
-| `run`(self) | `int` | Führt die konkrete Aktion aus und setzt den Status |
+| `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück |
 
 
 
@@ -133,7 +133,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgabe enthalten.
 
-Die Methode `run(self) -> int` beinhaltet bei konkrete Implementlierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
+Die Methode `run(self) -> str` beinhaltet bei konkrete Implementlierung (Aktionen) die Ausführung der Aufgabe. Unmittelbar vor Beginn des ersten konkreten Ausführungsbefehls wird die Variable `status` auf *running' gesetzt. Nach Ausführung auf *finished* im Erfolgsfall und *failed* im Fehlerfall.
 
 Die Ausführung der Aktion ist immer mit einer `try except`-Klausel zu versehen. Die Aktion darf niemals das gesamte Skript beenden! Im Fehlerfall wurd die `status`-variable auf *failed' gesetzt und eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen") erzeugt. Die Ausnahme-Behandlung wird an das aufrufende Modul weitergereicht. Dabei ist darauf zu achten, dass möglichst umfangreiche Informationen zur Verfügung gestellt werden um ggf. eine weitere Diagnostik durch das aufrufende Modul zu ermöglichen.
 
@@ -493,3 +493,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.16 | 2026-06-30 | Claude | Konfigurations-/Parameter-Deklaration vereinfacht (Entscheidung Martin): `CONFIG` und `PARAMS` sind reine Namenslisten (`list[str]`); `ConfigItem` samt Abschnitt 4.3 und Diagrammklasse entfernt, Abschnitt „Absicherung des Ladens" auf 4.3 aufgerückt. Pflicht/Kann, Vorgabewert und inhaltliche Prüfung liegen im Modul bzw. Aufrufer; `check_config`/`check_action_params` auf Vorhandensein bzw. Vollständigkeit reduziert. `check_pattern`-Ablauf ergänzt, Parameter `name`→`pattern`. |
 | 0.17 | 2026-06-30 | Claude | `check_action_params` aus `Module` gestrichen (Entscheidung Martin); nach der Vereinfachung auf Namenslisten blieb nur ein Namensabgleich. In `Module` verbleibt `resolve_action`; die Parameter-Werte prüft das Modul oder der Aufrufer selbst. |
 | 0.18 | 2026-06-30 | Claude | Konsistenzbefunde behoben: Dateiverweis `05`→`06_bereitstellung.md` (4.2); ins Leere zeigenden safe-mode-Kapitelzeiger in 3.3 entfernt; `run`-Rückgabe in der Tabelle (2.1) auf `int` vereinheitlicht; `stdout`/`stderr`/`returncode` in 2.1.1 als Instanzvariablen benannt; `obj.x` (1.2); `MOD-01` (1.1). |
+| 0.19 | 2026-06-30 | Claude | `run`-Rückgabe zurück auf den Status (`str`, `obj.status`): Tabelle 2.1 und Signatur in 2.1.1 angeglichen (Korrektur zu 0.18, Entscheidung Martin). |
