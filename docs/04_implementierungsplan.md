@@ -41,7 +41,7 @@ Jede der grundlegenden Komponenten wird durch eine Python-Klasse repräsentiert.
 
 Aufrufende Skripte sollten eine Klasse beinhalten, welche von `PifosCaller` in `caller.py` erbt. Die Klasse `PifosCaller` stellt alle wesentlichen Funktionen zur Nutzung von *pifos* einschl. der IPC-Funktionalität zur Verfügung.  
 
-Der Aufrufer instanziiert ein Config-Objekt mit einem spezfischen Konfigformat (z. B. 'ini', 'toml', 'json' usw.) und startet ein oder mehrere Module jeweils als eigenen Prozess (STR-01, STR-02). Dabei werden die erforderlichen Config-Daten als Config-Objet an das Modul übergeben. Ein Modul wiederum hat eine oder mehrere Aktionen (Komposition) und steuert diese über Parameter und Instanzvariablen (MOD-1, MOD-06).  Das Modul leitet Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer. Die Führung des Logfiles ist Sache des Aufrufers (LOG-01, LOG-02).
+Der Aufrufer instanziiert ein Config-Objekt mit einem spezfischen Konfigformat (z. B. 'ini', 'toml', 'json' usw.) und startet ein oder mehrere Module jeweils als eigenen Prozess (STR-01, STR-02). Dabei werden die erforderlichen Config-Daten als Config-Objet an das Modul übergeben. Ein Modul wiederum hat eine oder mehrere Aktionen (Komposition) und steuert diese über Parameter und Instanzvariablen (MOD-01, MOD-06).  Das Modul leitet Meldungen, Ergebnisse und Ausnahmen über IPC an den Aufrufer. Die Führung des Logfiles ist Sache des Aufrufers (LOG-01, LOG-02).
 
 Ein Beispiel für eine konkrete Action-Klasse und Formatklasse, sowie weitere Hilfsklassen und vollständige Methodenlisten für die abstrakten Klassen werden in den nachfolgenden Kapiteln (*2. Aktionen*, *3. Module* und *4. Konfiguration*) beschrieben.
 
@@ -98,7 +98,7 @@ flowchart TB
 
 Grundsätzlich sollte der einfachste Weg gewählt werden um eine Aufgabe zu lösen (KISS: 'keep it simple and stupid). Unnötige Verberbungen und komplexe Vererbunhsstrukturen sollten vermieden werden. Komponenten (z. B. Config-Format-Klassen, oder Aktions-Klassen) sollten nur dann entwicklet werden wenn dich auch wirkliche benötigt werden (ÜBR-03, ÜBR-05).
 
-Öffentliche Attribute sind i. d. R direkt über `x.obj` zugänglich, *getter* und *setter* (`get_x()`/`set_x()`) werden nicht genutzt. Ein Zugriff über `@property` kann beo Bedarf genutzt werden (ÜBR-04).
+Öffentliche Attribute sind i. d. R direkt über `obj.x` zugänglich, *getter* und *setter* (`get_x()`/`set_x()`) werden nicht genutzt. Ein Zugriff über `@property` kann beo Bedarf genutzt werden (ÜBR-04).
 
 Aktionen, die Dateien ändern, überschreiben oder löschen, müssen die Originaldatei vor sichern oder vor Überschreibn ohne explizite Aufforderung schützen (AKT-06).
 
@@ -120,7 +120,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 | Methode | Rückgabewert | Bedeutung |
 |---------|--------------|-----------|
-| `run`(self) | `str` (`obj.status`) | Führt die konkrete Aktion aus, setzt den Status und liefert diesen zurück) |
+| `run`(self) | `int` | Führt die konkrete Aktion aus und setzt den Status |
 
 Das Klassenattribut `PARAMS: list[str]` nennt die Namen der Parameter, die die Aktion erwartet. Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst — formal über `check_pattern` (Kapitel 4 „Konfiguration"), inhaltlich im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
 
@@ -135,7 +135,7 @@ Die Methode `run(self) -> int` beinhaltet bei konkrete Implementlierung (Aktione
 
 Die Ausführung der Aktion ist immer mit einer `try except`-Klausel zu versehen. Die Aktion darf niemals das gesamte Skript beenden! Im Fehlerfall wurd die `status`-variable auf *failed' gesetzt und eine Ausnahme der Klasse `ActionError` (siehe Kapitel 8 „Fehlerbehandlung und Ausnahmen") erzeugt. Die Ausnahme-Behandlung wird an das aufrufende Modul weitergereicht. Dabei ist darauf zu achten, dass möglichst umfangreiche Informationen zur Verfügung gestellt werden um ggf. eine weitere Diagnostik durch das aufrufende Modul zu ermöglichen.
 
-Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Klassenvariablen eingeführt und in der `run()`-Methode mit der vollständigen Ausgabe der entsprechenden Kanäle (capturing) gefüllt. Zusätzlich wird die Klassenvariable `returncode` genutzt um den Rückgabewert des Systembefehls abzulegen. Bei einem `returncode' ungleich '0' (Linux) eine `ActionError`-Ausnahme erzeugt und an das Modil übergeben.
+Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Instanzvariablen eingeführt und in der `run()`-Methode mit der vollständigen Ausgabe der entsprechenden Kanäle (capturing) gefüllt. Zusätzlich wird die Instanzvariable `returncode` genutzt um den Rückgabewert des Systembefehls abzulegen. Bei einem `returncode' ungleich '0' (Linux) eine `ActionError`-Ausnahme erzeugt und an das Modil übergeben.
 
 
 ## 3. Module
@@ -206,7 +206,7 @@ Beim Start prüft `check_config` das Vorhandensein der in `CONFIG` genannten Wer
 
 `check(self) -> bool | None` ist der Überprüfungsmodus: Er prüft den Erfolg der eigenen Aktionen und Eingriffe gezielt und vollständig und gibt das Ergebnis zurück (MOD-12). Der Default liefert `None` und zeigt damit an, dass das Modul keine Überprüfung anbietet; der Aufrufer erkennt das unmittelbar am Rückgabewert, ohne gesondertes Merkmal. `rollback(self) -> None` nimmt die Eingriffe zurück (MOD-13); der Default bleibt wirkungslos.
 
-Für den Rollback führt das Modul eine Undo-Registratur: ausgeführte, umkehrbare Eingriffe und die im safe-mode gesicherten Dateien (Kapitel 2 „Aktionen") werden darin vermerkt; `rollback` arbeitet die Registratur in umgekehrter Reihenfolge ab. Der Rollback ist eine je Modul bereitzustellende Schnittstelle, keine vom Bausatz garantierte allgemeine Rücknahme beliebiger Systemeingriffe (Bedingung B1 der Machbarkeit).
+Für den Rollback führt das Modul eine Undo-Registratur: ausgeführte, umkehrbare Eingriffe und die im safe-mode gesicherten Dateien werden darin vermerkt; `rollback` arbeitet die Registratur in umgekehrter Reihenfolge ab. Der Rollback ist eine je Modul bereitzustellende Schnittstelle, keine vom Bausatz garantierte allgemeine Rücknahme beliebiger Systemeingriffe (Bedingung B1 der Machbarkeit).
 
 Die Idempotenz-Erkennung eines bereits erfolgten Eingriffs ist modulabhängig und optional (MOD-14); eine allgemeine Pflicht besteht nicht.
 
@@ -272,7 +272,7 @@ Für jede genutzte Konfigurationsart gibt es eine eigene Klasse, die die Konfigu
 | json | `JsonConfig` | `json` | `json` |
 | toml | `TomlConfig` | `tomllib` | `tomli-w` (optional) |
 
-ini und json lesen und schreiben mit der Standardbibliothek und bilden den schreibbaren Pflichtumfang. toml liest `TomlConfig` mit `tomllib`, das seit Python 3.11 zur Standardbibliothek gehört und bei der Mindestversion 3.13 ohnehin vorhanden ist; der Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und wird erst bei Bedarf aktiviert. Diese Festlegung übernimmt `docs/05_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat"); der Plan wiederholt sie nicht. Eine Formatklasse darf zum Einlesen und Schreiben von Dateien die Aktionsklassen nutzen (KFG-07).
+ini und json lesen und schreiben mit der Standardbibliothek und bilden den schreibbaren Pflichtumfang. toml liest `TomlConfig` mit `tomllib`, das seit Python 3.11 zur Standardbibliothek gehört und bei der Mindestversion 3.13 ohnehin vorhanden ist; der Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und wird erst bei Bedarf aktiviert. Diese Festlegung übernimmt `docs/06_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat"); der Plan wiederholt sie nicht. Eine Formatklasse darf zum Einlesen und Schreiben von Dateien die Aktionsklassen nutzen (KFG-07).
 
 ini ist das primäre Format, weil es mit Bordmitteln liest und schreibt, von Hand editierbar ist und seine Sektionen Module natürlich abbilden; json ergänzt es für verschachtelte oder maschinennahe Konfiguration. Welches Format ein Aufrufer nutzt, bestimmt er selbst.
 
@@ -487,3 +487,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.15 | 2026-06-29 | Claude | Parameter-Deklaration in `Action` ergänzt: Klassenattribut `PARAMS: list[ConfigItem]` (Name, Verbindlichkeit, Vorgabe, Prüfung, Beschreibung je Parameter, Struktur wie `Module.CONFIG`); Grundlage für `check_action_params`. |
 | 0.16 | 2026-06-30 | Claude | Konfigurations-/Parameter-Deklaration vereinfacht (Entscheidung Martin): `CONFIG` und `PARAMS` sind reine Namenslisten (`list[str]`); `ConfigItem` samt Abschnitt 4.3 und Diagrammklasse entfernt, Abschnitt „Absicherung des Ladens" auf 4.3 aufgerückt. Pflicht/Kann, Vorgabewert und inhaltliche Prüfung liegen im Modul bzw. Aufrufer; `check_config`/`check_action_params` auf Vorhandensein bzw. Vollständigkeit reduziert. `check_pattern`-Ablauf ergänzt, Parameter `name`→`pattern`. |
 | 0.17 | 2026-06-30 | Claude | `check_action_params` aus `Module` gestrichen (Entscheidung Martin); nach der Vereinfachung auf Namenslisten blieb nur ein Namensabgleich. In `Module` verbleibt `resolve_action`; die Parameter-Werte prüft das Modul oder der Aufrufer selbst. |
+| 0.18 | 2026-06-30 | Claude | Konsistenzbefunde behoben: Dateiverweis `05`→`06_bereitstellung.md` (4.2); ins Leere zeigenden safe-mode-Kapitelzeiger in 3.3 entfernt; `run`-Rückgabe in der Tabelle (2.1) auf `int` vereinheitlicht; `stdout`/`stderr`/`returncode` in 2.1.1 als Instanzvariablen benannt; `obj.x` (1.2); `MOD-01` (1.1). |
