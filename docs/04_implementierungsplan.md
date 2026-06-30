@@ -129,7 +129,7 @@ Eine *Aktion* erledigt genau eine Aufgabe und stellt deren Ausführung und Ausga
 
 
 
-### 2.1.1 Implementierung von Action
+### 2.1.1. Implementierung von Action
 
 Die Implementierungen von `Action' können weitere Konstruktorargumente oder Attribute zur Steuerung der Aufgabe enthalten.
 
@@ -142,7 +142,11 @@ Führ eine Aktion Systembefehle aus, werden `stdout` und `stderr` als Instanzvar
 
 ## 3. Module
 
-Ein *Modul* ist eine Klasse vom Tpy *Modul* und dient zur fachlichen korrekten Abarbeitung von ein oder mehrerer Aktionen. Sie erhält als Parameter ein `Config`-Objekt vom aufrufenden Prozess. Für die Durchführung seine Aufgabe nutzen Module die *Aktionen* (MOD-01, MOD-02, MOD-05).
+Ein *Modul* ist eine abstrakte Klasse vom Tpy *Modul* (aus `module.py`)und dient zur fachlichen Abarbeitung von ein oder mehrerer Aktionen. Sie erhält als Parameter ein `Config`-Objekt vom aufrufenden Prozess. Für die Durchführung seine Aufgabe nutzen Module die *Aktionen* (MOD-01, MOD-02, MOD-05).
+
+**HINWEIS**
+
+Die vom Modul an dei Aktionen weitergegebenen Parameter MÜSSEN vor Weitergabe GEPRÜFT werden, sofern dies nicht schon auf aufrufenden Prozes erledigt wurde!
 
 Die Basisklasse `Module` stellt auch die optionalen Methoden `check`, zur Überprüfung von Aktionen, und `rollback`, zum Rückbau der Aktion, bereit, welche bei Nutzung überschrieben werde müsssen (MOD-12, MOD-13).
 
@@ -173,15 +177,15 @@ classDiagram
     Module o-- "0..*" Action : Komposition
 ```
 
-### 3.1 Basisklasse Module
+### 3.1. Basisklasse Module
 
 `Module` ist die abstrakte Basisklasse zur Erstellung von Modulen in `module.py`. Sie stellt Methoden Mehoden zu Ausführung und Steuerung von Aktionen sowie zur Interaktion mit dem aufrufendem Prozss zur Verfügung (MOD-05).
 
-Eine Modul versorgt die Aktionen mit den notwendigen Parameter
+Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst. Die formale Prüfung (z. B. 'ist Zahl', 'ist Email-Adresse') kann über die `check_pattern`-Methode (Kapitel 4 „Konfiguration") des `Config`-Objektes durchgeführt werden. Die inhaltlich fachliche Prüfung muss durch eigenen Code in der `Module`-Implementierung erfolgen. Beide Prüfungen können aber auch bereits im Aufrufer erfolgen im Modul oder beim Aufrufer.
 
-Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die Werte bei Bedarf selbst — formal über `check_pattern` (Kapitel 4 „Konfiguration"), inhaltlich im Modul oder beim Aufrufer. Eine Aktion ohne Parameter lässt `PARAMS` leer.
+Über die Methoden `send_message` und `receive_message` kommuniziert dsa Modul über  IPC mit dem aufrufenden Prozess (Kapitel 6 „Prozessmodell, Steuerung und IPC"). ; die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. 
 
-
+`resolve_action` sucht eine Aktion im Aktions-Verzeichnis und liefert als Rückgabewert die `Action`-Klasse bei Erfolg oder meldet einen Fehler bei Mißerolg.
 
 | Methode | Zweck |
 |---------|-------|
@@ -195,9 +199,10 @@ Das aufrufende Modul versorgt die Aktion mit diesen Parametern und prüft die We
 | `check(self) -> bool \| None` | optional: prüft den Erfolg der eigenen Eingriffe und gibt das Ergebnis zurück; Default `None` (keine Überprüfung), ein Modul mit prüfbarer Wirkung überschreibt sie (MOD-12) |
 | `rollback(self) -> None` | optional: nimmt die Eingriffe zurück; Default ohne Wirkung, ein Modul mit umkehrbarer Wirkung überschreibt sie (MOD-13) |
 
-`send_message` und `receive_message` kapseln den IPC-Kanal des Modulprozesses (Kapitel 6 „Prozessmodell, Steuerung und IPC"); die konkrete Aufgabe in `start` ruft sie, ohne die IPC-Technik zu kennen. Module tragen beschreibende Namen, aus denen ihr Typ erkennbar ist, etwa ein Installationsmodul als `InstModule` oder mit Präfix `inst_` (MOD-07).
+#### 3.1.1. Implementierung von Module
 
-`resolve_action` schlägt eine Aktion im Aktions-Verzeichnis nach und liefert ihre Klasse oder meldet einen Fehler, wenn es sie nicht gibt. Die Methode liegt in der Basisklasse, damit jedes Modul Aktionen einheitlich auflöst, statt diese Mechanik selbst zu wiederholen (MOD-05). Wie das Aktions-Verzeichnis gefüllt wird, hängt vom konkreten Aktionssatz ab und wird festgelegt, sobald dieser feststeht (ÜBR-05).
+Module sollen beschreibende Namen erhalten um den Verwendungszweck zu erkennnen, so sollte z. B. ein Installationsmodul könnte den Klassennamen `InstModule`  und/oder den Dateinamen `inst_` erhalten (MOD-07).
+
 
 ### 3.2 Konfigurationsdeklaration und Prüfung
 
