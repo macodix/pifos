@@ -252,6 +252,7 @@ pifos stellt eine Basisklasse für Aufrufer bereit, die die gemeinsame Infrastru
 | CAL-05 | MUSS | Die Aufrufer-Basisklasse stellt Methoden bereit, um Logfiles zu führen. |
 | CAL-06 | MUSS | Ein konkreter Aufrufer steuert nur seine Fachlogik und Oberfläche bei. |
 | CAL-07 | MUSS | Die Aufrufer-Basisklasse bietet überschreibbare Leer- oder Standardmethoden, mit denen der konkrete Aufrufer auf den Ausgang eines Moduls (Erfolg, Fehler, Abbruch) reagiert. |
+| CAL-08 | MUSS | Die Aufrufer-Basisklasse lädt die Konfiguration über eine Methode aus einer Datei und hält sie als Instanzvariable bereit. |
 
 ## 12. Bereitstellung
 
@@ -376,5 +377,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.12 | 2026-07-01 | Claude | SIC-18 (Größengrenze beim Einlesen) gestrichen (Entscheidung Martin) — keine sinnvolle Grenze bestimmbar, im Vertrauensmodell bestimmt der Ersteller die Größe selbst; Nummer bleibt unbesetzt, Hinweis in 13.6 ergänzt. |
 | 0.13 | 2026-07-01 | Claude | CAL-08 ergänzt: Aufrufer-Basisklasse lädt eine Konfiguration aus einer Datei im angegebenen Format und liefert ein Config-Objekt. |
 | 0.14 | 2026-07-01 | Claude | Config-Laden von der Aufrufer-Basisklasse zu Config verschoben (Entscheidung Martin): CAL-08 zurückgenommen (letzte Nummer, entfällt ohne Lücke), neu KFG-10 (Config lädt aus einer Datei im angegebenen Format). |
+| 0.15 | 2026-07-01 | Claude | CAL-08 neu belegt (Entscheidung Martin): Die Aufrufer-Basisklasse lädt die Konfiguration über eine Methode und hält sie als Instanzvariable bereit. |
 </content>
 </invoke>

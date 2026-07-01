@@ -310,6 +310,8 @@ classDiagram
     class PifosCaller {
         <<abstract>>
         +loglevel
+        +config
+        +load_config()
         +start_module()
         +stop_module()
         +resume_module()
@@ -330,12 +332,13 @@ classDiagram
 
 
 
-`PifosCaller` führt das einstellbare `loglevel` (LOG-04) und kapselt die Steuerung der Modulprozesse.
+`PifosCaller` führt das einstellbare `loglevel` (LOG-04), hält die geladene Konfiguration in der Instanzvariablen `config` und kapselt die Steuerung der Modulprozesse.
 
-`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher, indem er ein `Config`-Objekt anlegt und mit `load_file` aus einer Datei im angegebenen Format füllt (KFG-10, STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
+`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher über `load_config`, das ein `Config`-Objekt anlegt, mit `load_file` aus einer Datei füllt und in der Instanzvariablen `config` bereitstellt (CAL-08, KFG-10, STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
 
 | Methode | Zweck |
 |---------|-------|
+| `load_config(self, path: str, format: str) -> None` | legt ein `Config`-Objekt an, lädt es über `Config.load_file` und stellt es als Instanzvariable `config` bereit (CAL-08) |
 | `start_module(self, module_cls, config=None) -> Handle` | startet ein Modul als Prozess, übergibt Config und Loglevel (CAL-02, STR-01, STR-02, LOG-05) |
 | `stop_module(self, handle) -> None` | hält einen Modulprozess an (CAL-02) |
 | `resume_module(self, handle) -> None` | setzt einen angehaltenen Modulprozess fort (CAL-02) |
@@ -514,3 +517,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.21 | 2026-06-30 | Claude | `rollback`-Signatur auf `bool \| None` gezogen (passend zum Text und zu `check`); `rollback`-Zeile in der Methodentabelle von 3.1 ergänzt. |
 | 0.22 | 2026-07-01 | Claude | `load_config` in die Methodentabelle von 5.1 aufgenommen (lädt Konfiguration aus einer Datei, liefert `Config`); Beschaffungssatz in 5.1 darauf umgestellt (CAL-08). |
 | 0.23 | 2026-07-01 | Claude | Config-Laden von `PifosCaller` zu `Config` verschoben (Entscheidung Martin): `load_config` aus 5.1 entfernt, `load_file` in die Config-Tabelle 4.1 aufgenommen; Beschaffungssatz auf `Config.load_file` umgestellt (KFG-10 statt CAL-08). |
+| 0.24 | 2026-07-01 | Claude | Aufrufer hält die Konfiguration als Instanzvariable `config`; Methode `load_config` (legt `Config` an, lädt via `Config.load_file`, stellt als `config` bereit) in 5.1-Tabelle und Diagramm ergänzt (CAL-08, Entscheidung Martin). |
