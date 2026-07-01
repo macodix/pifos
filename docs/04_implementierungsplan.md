@@ -272,6 +272,7 @@ Die `Config`-Klasse im Unterpaket `config/` hält die Konfiguration intern als e
 | `get_section(self, name: str) -> dict \| list` | liefert eine Sektion als dict oder list (KFG-02) |
 | `get_list(self, key: str, sort: bool = False) -> list` | liefert eine sortierte oder unsortierte Liste (KFG-02) |
 | `check_pattern(self, pattern: str, value) -> bool` | wendet ein formales Prüfmuster auf einen Wert an (KFG-09) |
+| `write_config(self, format, path) | schreibt die aktuelle Konfiguration in eine Datei |
 
 Eine inhaltliche Prüfung der Konfigurationsdaten findet nicht statt (KFG-08). 
 
@@ -281,7 +282,7 @@ Die formale Prüfung läuft nicht automatisiert, sondern muss für jeden zu prü
 
 ### 4.2 Formatklassen
 
-Für jedes genutzte Konfigurationsformat gibt es eine eigene Klasse, welche die Konfiguration standardisiert an `Config` übergibt (KFG-04). Jede Formatklasse bietet sowohl lesenden Zugriff (`to_dict()`) als auch schreibenden Zugriff () bietet beide Richtungen: `to_dict()` liest die Quelle in ein dict, ein Schreibweg überführt ein dict zurück in eine Datei. Den unzerlegten Inhalt liefert der raw-Zugang (KFG-06).
+Für jedes genutzte Konfigurationsformat gibt es eine eigene Klasse, welche die Konfiguration standardisiert an `Config` übergibt (KFG-04). Jede Formatklasse bietet sowohl lesenden Zugriff (`to_dict()`) als auch schreibenden Zugriff (`write_config`()) (KFG-07). Die Methode `raw()` gibt die gesamte KOnfigurationsdatei als String zurück (KFG-06).
 
 | Format | Klasse | Lesen | Schreiben |
 |--------|--------|-------|-----------|
@@ -289,17 +290,15 @@ Für jedes genutzte Konfigurationsformat gibt es eine eigene Klasse, welche die 
 | json | `JsonConfig` | `json` | `json` |
 | toml | `TomlConfig` | `tomllib` | `tomli-w` (optional) |
 
-ini und json lesen und schreiben mit der Standardbibliothek und bilden den schreibbaren Pflichtumfang. toml liest `TomlConfig` mit `tomllib`, das seit Python 3.11 zur Standardbibliothek gehört und bei der Mindestversion 3.13 ohnehin vorhanden ist; der Schreibweg über die mitgelieferte Bibliothek `tomli-w` ist optional und wird erst bei Bedarf aktiviert. Diese Festlegung übernimmt `docs/06_bereitstellung.md` (Kapitel „Schreibweg je Konfigurationsformat"); der Plan wiederholt sie nicht. Eine Formatklasse darf zum Einlesen und Schreiben von Dateien die Aktionsklassen nutzen (KFG-07).
+Zum Zeitpunkt der ersten Implementierung werden Formatklassen für 'ini', 'toml' und 'json' migtgeliefert. Weitere Klassen können später noch hinzugefügt werden. Bei 'ini' wird das erweiterte 'ini'-Format (Verschachtelung) unterstützt. 
 
-ini ist das primäre Format, weil es mit Bordmitteln liest und schreibt, von Hand editierbar ist und seine Sektionen Module natürlich abbilden; json ergänzt es für verschachtelte oder maschinennahe Konfiguration. Welches Format ein Aufrufer nutzt, bestimmt er selbst.
+**HINWEIS**
 
-### 4.3 Absicherung des Ladens
-
-Beim Einlesen von Konfigurationsquellen sind Pfad, Format und Größe zu kontrollieren. Der Pfad zu einer Konfigurationsquelle wird vor dem Laden geprüft und auf den vorgesehenen Bereich begrenzt (SIC-16). Die Formatklassen lesen mit `configparser`, `json` und `tomllib`; alle drei verarbeiten nur Daten und führen keine Deserialisierung aus, die Code ausführen kann (SIC-17). Beim Einlesen gilt eine Größengrenze, um übergroße Quellen abzuweisen (SIC-18).
+Die Formatklassen werten die Konfifurationen und deren Werte NICHT aus (kein `eval`) und es dürfen nur sichere Varianten der Deserialisierung (also kein `pickle` oder `yaml.load`) nutzen. Die Prüfung der Konfiguration liegt ausschließlich in Unterklassen von `Module`und `PifosCaller` (SIC-17).
 
 ## 5. Aufrufer-Basisklasse PifosCaller
 
-*pifos* stellt die abstrakte Basisklasse `PifosCaller` in `caller.py` bereit, von der konkrete Aufrufer wie der Installer erben (CAL-01, CAL-06). Sie bündelt die gemeinsame Infrastruktur — Prozesssteuerung, IPC und Logfile-Führung — sodass der konkrete Aufrufer nur Fachlogik und Oberfläche beisteuert. Dieses Kapitel beschreibt ihre Methoden und die überschreibbaren Reaktionen auf den Modulausgang. Das Prozessmodell und der IPC-Mechanismus, auf denen diese Methoden aufsetzen, stehen in Kapitel 6 „Prozessmodell, Steuerung und IPC".
+Mit der Basisklasse `PifosCaller` in `caller.py` stellt *pifos* eine einfache Möglichkeit zur Verfügung  die Nutzung der *pifos*-Infrastruktur zur Prozesssteuerung, IPC und Logging in eigenen Python-Scripten zu nutzen. Dazu muss das eigenen Script die Basisklasse `PifosCaller`einfach nur beerben (CAL-01, CAL-06). Dadurch kann sich das eigenen Scripte und Module i. d. R auf die reine Dachlogik konzentrieren.
 
 Das folgende Klassendiagramm zeigt die Basisklasse `PifosCaller` und einen konkreten Aufrufer, der von ihr erbt.
 
