@@ -329,6 +329,8 @@ classDiagram
 
 `PifosCaller` führt das einstellbare `loglevel` (LOG-04) und kapselt die Steuerung der Modulprozesse.
 
+`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher durch Instanziierung eines `Config`-Objekts (STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
+
 | Methode | Zweck |
 |---------|-------|
 | `start_module(self, module_cls, config=None) -> Handle` | startet ein Modul als Prozess, übergibt Config und Loglevel (CAL-02, STR-01, STR-02, LOG-05) |
@@ -339,7 +341,7 @@ classDiagram
 | `receive_result(self, handle) -> IpcMessage` | empfängt oder fordert Meldungen und Ergebnisse an (CAL-04, STR-03) |
 | `write_log(self, message) -> None` | schreibt eine Meldung ins Logfile (CAL-05, LOG-01) |
 
-`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher durch Instanziierung eines `Config`-Objekts (STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
+
 
 ### 5.2 Reaktion auf den Modulausgang
 
