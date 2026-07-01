@@ -317,14 +317,15 @@ Der safe-mode legt vor dateiverändernden Aktionen eine Sicherung an (AKT-06/07)
 
 ### 13.6 Laden von Konfigurationsquellen
 
-Beim Einlesen von Konfigurationsdateien sind Format und Größe zu kontrollieren.
+Beim Einlesen von Konfigurationsdateien ist das Format zu kontrollieren.
 
 Die Nummer SIC-16 ist nicht vergeben; sie forderte eine Pfadprüfung der Konfigurationsquelle. Da pifos mit den Rechten des Aufrufers lädt, regeln die Dateirechte den Zugriff; eine gesonderte Pfadbegrenzung wäre nur bei einer Rechtegrenze zwischen Pfad-Quelle und ladendem Prozess wirksam und ist für den Bausatz nicht gefordert.
+
+Auch die Nummer SIC-18 ist nicht vergeben; sie forderte eine Größengrenze beim Einlesen. Eine sinnvolle Grenze ist nicht bestimmbar, und im Vertrauensmodell bestimmt der Ersteller die Größe der Konfiguration selbst.
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
 | SIC-17 | MUSS | Konfigurationsdateien werden mit einem Parser eingelesen, der nur Daten verarbeitet; eine Deserialisierung, die Code ausführen kann, wird nicht verwendet. |
-| SIC-18 | KANN | Beim Einlesen von Konfigurationsquellen gelten Größengrenzen. |
 
 ### 13.7 Sicheres Protokollieren
 
@@ -371,5 +372,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.09 | 2026-06-29 | Claude | ÜBR-04 (Attributzugriff) von MUSS auf KANN herabgestuft und als Empfehlung gefasst — direkter Zugriff, `@property` optional bei Prüfung/Berechnung; Attributzugriff ist Stilfrage, keine Pflicht. |
 | 0.10 | 2026-06-30 | Claude | Konfigurations-Deklaration vereinfacht (Entscheidung Martin): MOD-08 auf reine Namensliste, MOD-09 auf Vorhandensein, MOD-10 von Deklaration auf Modul-Verhalten umgestellt; KFG-03 (Klasse für einzelne Konfigurationseinträge) gestrichen, Nummer bleibt unbesetzt, Hinweis in Kapitel 6 ergänzt. |
 | 0.11 | 2026-07-01 | Claude | SIC-16 (Pfadprüfung der Konfigurationsquelle) gestrichen (Entscheidung Martin) — ohne Rechtegrenze zwischen Pfad-Quelle und ladendem Prozess wirkungslos; Nummer bleibt unbesetzt, Hinweis in Kapitel 13.6 ergänzt, Einleitung angepasst. |
+| 0.12 | 2026-07-01 | Claude | SIC-18 (Größengrenze beim Einlesen) gestrichen (Entscheidung Martin) — keine sinnvolle Grenze bestimmbar, im Vertrauensmodell bestimmt der Ersteller die Größe selbst; Nummer bleibt unbesetzt, Hinweis in 13.6 ergänzt. |
 </content>
 </invoke>
