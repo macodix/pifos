@@ -330,11 +330,9 @@ classDiagram
 
 ### 5.1 Methoden der Basisklasse
 
+Der `PifosCaller` lädt mit der Method `load_config()` eine Konfiguration. Die Konfiguration sollte u. a. auch das Loglevel festlegen (LOG-04, CAL-08, KFG-10, STR-02).
 
-
-`PifosCaller` führt das einstellbare `loglevel` (LOG-04), hält die geladene Konfiguration in der Instanzvariablen `config` und kapselt die Steuerung der Modulprozesse.
-
-`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher über `load_config`, das ein `Config`-Objekt anlegt, mit `load_file` aus einer Datei füllt und in der Instanzvariablen `config` bereitstellt (CAL-08, KFG-10, STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
+Beim Start eines Modules wird dem Modul die Config oder ein entsprechender Teil der Config und das Loglevel übergeben (STR-02, LOG-05). Module die keine Konfigurationsdaten benötigten bekommen auch keine Config übergeben (MOD-03). Mehrere Module können sequentiell oder auch parallel gestartet werden. Für die Kommunikation nutzt `PifosCaller` IPC-Pipes.
 
 | Methode | Zweck |
 |---------|-------|
@@ -351,7 +349,7 @@ classDiagram
 
 ### 5.2 Reaktion auf den Modulausgang
 
-Nach Prozessende wertet `PifosCaller` den Rückgabewert aus: 0 bedeutet Erfolg, ein Wert ungleich 0 einen Fehler (STR-05). Je nach Ausgang ruft die Basisklasse eine überschreibbare Methode, mit der der konkrete Aufrufer reagiert (CAL-07).
+Nach Prozessende eines Modules wertet `PifosCaller` den Rückgabewert aus (0 = Erfolg, sonst Fehler) (STR-05). Je nach Ausgang ruft die Basisklasse eine überschreibbare Methode auf (CAL-07).
 
 | Methode | Auslöser |
 |---------|----------|
@@ -359,11 +357,8 @@ Nach Prozessende wertet `PifosCaller` den Rückgabewert aus: 0 bedeutet Erfolg, 
 | `on_module_failure(self, handle, returncode)` | Rückgabewert ungleich 0 |
 | `on_module_abort(self, handle)` | erzwungene Beendigung ohne regulären Abschluss |
 
-Die Basisklasse liefert diese als Leer- oder Standardmethoden; ein konkreter Aufrufer überschreibt sie nach Bedarf (CAL-07). Der konkrete Aufrufer steuert darüber hinaus nur seine Fachlogik und Oberfläche bei (CAL-06).
 
 ## 6. Prozessmodell, Steuerung und IPC
-
-Ein Modul ist eine Python-Klasse, wird zur Ausführung aber zu einem eigenen, steuerbaren Prozess. Dieses Kapitel legt das Prozessmodell, den IPC-Mechanismus, das Nachrichtenformat und die Hauptschleife des Modulprozesses fest und sichert die IPC ab. Es ist die technische Grundlage der Methoden aus Kapitel 5 (PifosCaller) und der Meldungswege aus Kapitel 3 (Module).
 
 ### 6.1 Prozessmodell
 
