@@ -329,10 +329,11 @@ classDiagram
 
 `PifosCaller` führt das einstellbare `loglevel` (LOG-04) und kapselt die Steuerung der Modulprozesse.
 
-`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher durch Instanziierung eines `Config`-Objekts (STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
+`start_module` übergibt das `Config`-Objekt und das aktuelle Loglevel an den Modulprozess (STR-02, LOG-05). Der Aufrufer beschafft die Konfiguration vorher über `load_config`, das eine Datei im angegebenen Format liest und ein `Config`-Objekt liefert (CAL-08, STR-02); ein Modul ohne Konfiguration erhält keines (MOD-03). Mehrere Module führt der Aufrufer sequenziell oder parallel, indem er mehrere Prozesse hält und ihre IPC-Kanäle gemeinsam abfragt (STR-06, Kapitel 6 „Prozessmodell, Steuerung und IPC").
 
 | Methode | Zweck |
 |---------|-------|
+| `load_config(self, path: str, format: str) -> Config` | lädt die Konfiguration aus einer Datei im angegebenen Format und liefert ein `Config`-Objekt (CAL-08) |
 | `start_module(self, module_cls, config=None) -> Handle` | startet ein Modul als Prozess, übergibt Config und Loglevel (CAL-02, STR-01, STR-02, LOG-05) |
 | `stop_module(self, handle) -> None` | hält einen Modulprozess an (CAL-02) |
 | `resume_module(self, handle) -> None` | setzt einen angehaltenen Modulprozess fort (CAL-02) |
@@ -509,3 +510,4 @@ Die gestufte Beendigung kann bis SIGKILL eskalieren (Kapitel 6 „Prozessmodell,
 | 0.19 | 2026-06-30 | macodix | `run`-Rückgabe zurück auf den Status (`str`, `obj.status`): Tabelle 2.1 und Signatur in 2.1.1 angeglichen (Korrektur zu 0.18, Entscheidung Martin). |
 | 0.20 | 2026-06-30 | macodix | Rechtschreib- und Tippfehler in den Kapiteln 1–3 korrigiert; doppelte Abschnittsnummer 3.1.1.1→3.1.1.2; toten IPC-Halbsatz in 3.1 entfernt. Grammatikalisch unklare Sätze und Konsistenzpunkte (u. a. `rollback`-Signatur) zur Klärung unangetastet gelassen. |
 | 0.21 | 2026-06-30 | macodix | `rollback`-Signatur auf `bool \| None` gezogen (passend zum Text und zu `check`); `rollback`-Zeile in der Methodentabelle von 3.1 ergänzt. |
+| 0.22 | 2026-07-01 | macodix | `load_config` in die Methodentabelle von 5.1 aufgenommen (lädt Konfiguration aus einer Datei, liefert `Config`); Beschaffungssatz in 5.1 darauf umgestellt (CAL-08). |
