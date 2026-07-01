@@ -317,11 +317,12 @@ Der safe-mode legt vor dateiverändernden Aktionen eine Sicherung an (AKT-06/07)
 
 ### 13.6 Laden von Konfigurationsquellen
 
-Beim Einlesen von Konfigurationsdateien sind Pfad, Format und Größe zu kontrollieren.
+Beim Einlesen von Konfigurationsdateien sind Format und Größe zu kontrollieren.
+
+Die Nummer SIC-16 ist nicht vergeben; sie forderte eine Pfadprüfung der Konfigurationsquelle. Da pifos mit den Rechten des Aufrufers lädt, regeln die Dateirechte den Zugriff; eine gesonderte Pfadbegrenzung wäre nur bei einer Rechtegrenze zwischen Pfad-Quelle und ladendem Prozess wirksam und ist für den Bausatz nicht gefordert.
 
 | ID | Verb. | Anforderung |
 |----|-------|-------------|
-| SIC-16 | MUSS | Pfade zu Konfigurationsquellen werden vor dem Laden geprüft und auf den vorgesehenen Bereich begrenzt. |
 | SIC-17 | MUSS | Konfigurationsdateien werden mit einem Parser eingelesen, der nur Daten verarbeitet; eine Deserialisierung, die Code ausführen kann, wird nicht verwendet. |
 | SIC-18 | KANN | Beim Einlesen von Konfigurationsquellen gelten Größengrenzen. |
 
@@ -369,5 +370,6 @@ pifos liefert Rich, questionary und deren Abhängigkeiten mit (BRS-01). Herkunft
 | 0.08 | 2026-06-29 | Claude | Hinweis in der Einleitung von Kapitel 13 ergänzt: SIC-10 und SIC-11 sind nicht vergeben (gestrichene Prozessrechte-Anforderungen). |
 | 0.09 | 2026-06-29 | Claude | ÜBR-04 (Attributzugriff) von MUSS auf KANN herabgestuft und als Empfehlung gefasst — direkter Zugriff, `@property` optional bei Prüfung/Berechnung; Attributzugriff ist Stilfrage, keine Pflicht. |
 | 0.10 | 2026-06-30 | Claude | Konfigurations-Deklaration vereinfacht (Entscheidung Martin): MOD-08 auf reine Namensliste, MOD-09 auf Vorhandensein, MOD-10 von Deklaration auf Modul-Verhalten umgestellt; KFG-03 (Klasse für einzelne Konfigurationseinträge) gestrichen, Nummer bleibt unbesetzt, Hinweis in Kapitel 6 ergänzt. |
+| 0.11 | 2026-07-01 | Claude | SIC-16 (Pfadprüfung der Konfigurationsquelle) gestrichen (Entscheidung Martin) — ohne Rechtegrenze zwischen Pfad-Quelle und ladendem Prozess wirkungslos; Nummer bleibt unbesetzt, Hinweis in Kapitel 13.6 ergänzt, Einleitung angepasst. |
 </content>
 </invoke>
