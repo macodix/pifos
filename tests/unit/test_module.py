@@ -1,0 +1,146 @@
+"""Smoke-Tests für pifos.module."""
+
+import pytest
+from pifos.module import Module
+
+
+def test_module_is_abstract() -> None:
+    """Module kann nicht direkt instanziiert werden."""
+    with pytest.raises(TypeError):
+        Module()  # type: ignore[abstract, call-arg]
+
+
+def test_concrete_module_requires_start() -> None:
+    """Eine konkrete Module-Unterklasse muss start() implementieren."""
+    from multiprocessing.connection import Connection
+    from unittest.mock import MagicMock
+
+    from pifos.ipc import LogLevel
+
+    class ConcreteModule(Module):
+        def start(self) -> int:
+            return 0
+
+    conn = MagicMock(spec=Connection)
+    mod = ConcreteModule(conn=conn, loglevel=LogLevel.INFO)
+    assert mod.start() == 0
+
+
+def test_module_check_returns_none_by_default() -> None:
+    """check() gibt None zurück, wenn nicht überschrieben."""
+    from unittest.mock import MagicMock
+
+    from pifos.ipc import LogLevel
+    from pifos.module import Module
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    assert mod.check() is None
+
+
+def test_module_rollback_returns_none_by_default() -> None:
+    """rollback() gibt None zurück, wenn nicht überschrieben."""
+    from unittest.mock import MagicMock
+
+    from pifos.ipc import LogLevel
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    assert mod.rollback() is None
+
+
+def test_module_config_class_attribute() -> None:
+    """CONFIG ist standardmäßig eine leere Liste."""
+    assert Module.CONFIG == []
+
+
+def test_module_check_config_sets_attributes() -> None:
+    """check_config legt Konfigurationswerte als Instanzvariablen ab."""
+    from typing import ClassVar
+    from unittest.mock import MagicMock
+
+    from pifos.config import Config
+    from pifos.ipc import LogLevel
+
+    class ConfModule(Module):
+        CONFIG: ClassVar[list[str]] = ["host", "port"]
+
+        def start(self) -> int:
+            return 0
+
+    cfg = Config()
+    cfg.load_dict({"host": "localhost", "port": 8080})
+    mod = ConfModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    mod.check_config(cfg)
+    assert mod.host == "localhost"  # type: ignore[attr-defined]
+    assert mod.port == 8080  # type: ignore[attr-defined]
+
+
+def test_module_check_config_missing_raises() -> None:
+    """check_config wirft ConfigError, wenn ein Pflichtschlüssel fehlt."""
+    from typing import ClassVar
+    from unittest.mock import MagicMock
+
+    from pifos.config import Config
+    from pifos.errors import ConfigError
+    from pifos.ipc import LogLevel
+
+    class StrictModule(Module):
+        CONFIG: ClassVar[list[str]] = ["required_key"]
+
+        def start(self) -> int:
+            return 0
+
+    cfg = Config()
+    cfg.load_dict({})
+    mod = StrictModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    with pytest.raises(ConfigError):
+        mod.check_config(cfg)
+
+
+def test_module_run_action_returns_zero_on_success() -> None:
+    """run_action gibt 0 zurück, wenn die Aktion finished meldet."""
+    from unittest.mock import MagicMock
+
+    from pifos.action import Action
+    from pifos.ipc import LogLevel
+
+    class OkAction(Action):
+        def run(self) -> str:
+            self.status = "finished"
+            return self.status
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return self.run_action(OkAction())
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    assert mod.start() == 0
+
+
+def test_module_control_action_sets_attribute() -> None:
+    """control_action setzt Attribute auf der Aktion."""
+    from unittest.mock import MagicMock
+
+    from pifos.action import Action
+    from pifos.ipc import LogLevel
+
+    class TweakableAction(Action):
+        def run(self) -> str:
+            self.status = "finished"
+            return self.status
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    action = TweakableAction()
+    mod.control_action(action, custom_param="hello")
+    assert action.custom_param == "hello"  # type: ignore[attr-defined]
