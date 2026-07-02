@@ -10,7 +10,7 @@ import multiprocessing
 import multiprocessing.connection
 from dataclasses import dataclass, field
 from multiprocessing.connection import Connection
-from typing import cast
+from typing import ClassVar, cast
 
 from pifos.config.config import Config
 from pifos.ipc import IpcMessage, LogLevel, MessageKind
@@ -71,6 +71,14 @@ class PifosCaller:
         loglevel: Einstellbare Logstufe des Aufrufers (LOG-04).
         config: Geladene Konfiguration; None vor dem ersten load_config-Aufruf.
     """
+
+    # Abbildung der vier pifos-Logstufen auf die Stufen des logging-Moduls (LOG-03).
+    _PY_LEVEL: ClassVar[dict[LogLevel, int]] = {
+        LogLevel.INFO: logging.INFO,
+        LogLevel.WARN: logging.WARNING,
+        LogLevel.ERROR: logging.ERROR,
+        LogLevel.CRITICAL: logging.CRITICAL,
+    }
 
     def __init__(self, loglevel: LogLevel = LogLevel.INFO) -> None:
         """Initialisiert den Aufrufer mit der angegebenen Logstufe.
@@ -197,17 +205,20 @@ class PifosCaller:
         """
         return cast(IpcMessage, handle.conn.recv())
 
-    def write_log(self, message: str) -> None:
-        """Schreibt eine Meldung ins Logfile.
+    def write_log(self, message: str, level: LogLevel = LogLevel.INFO) -> None:
+        """Schreibt eine Meldung mit ihrer Logstufe ins Logfile.
 
-        Bereinigt Steuerzeichen vor dem Schreiben (SIC-19).
+        Bildet die pifos-Logstufe auf die passende Stufe des logging-Moduls
+        ab, damit ERROR und CRITICAL auch als solche im Logfile erscheinen
+        (LOG-01, LOG-03). Bereinigt Steuerzeichen vor dem Schreiben (SIC-19).
 
         Args:
             message: Zu protokollierende Meldung.
+            level: Logstufe der Meldung; Standard: INFO.
         """
         # Steuerzeichen entfernen (SIC-19, insbesondere Zeilenumbrüche)
         clean = message.translate(str.maketrans("\n\r\t", "   "))
-        self._logger.info(clean)
+        self._logger.log(self._PY_LEVEL[level], clean)
 
     def check_module_exit(self, handle: ModuleHandle) -> None:
         """Wertet den Exitcode eines beendeten Moduls aus und ruft den Handler.
