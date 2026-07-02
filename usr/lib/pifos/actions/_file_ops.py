@@ -11,7 +11,7 @@ import stat
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import IO
+from typing import IO, TextIO
 
 from pifos.errors import ActionError
 
@@ -33,6 +33,23 @@ def fd_copy(src_fd: int, dst_fd: int) -> None:
         os.write(dst_fd, chunk)
 
 
+def _open_no_follow(path: Path) -> TextIO:
+    """Öffnet eine Textdatei lesend, ohne Symlinks zu folgen (SIC-15).
+
+    Args:
+        path: Zu öffnende Datei.
+
+    Returns:
+        Geöffnetes Textdateiobjekt (encoding="utf-8"); vom Aufrufer über
+        einen Kontextmanager zu schließen.
+
+    Raises:
+        OSError: Bei Öffnungsfehler, insbesondere ELOOP bei Symlinks.
+    """
+    fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW)
+    return os.fdopen(fd, encoding="utf-8")
+
+
 def read_lines_no_follow(path: Path) -> list[str]:
     """Liest eine Textdatei zeilenweise, ohne Symlinks zu folgen (SIC-15).
 
@@ -45,9 +62,24 @@ def read_lines_no_follow(path: Path) -> list[str]:
     Raises:
         OSError: Bei Öffnungs- oder Lesefehler.
     """
-    fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW)
-    with os.fdopen(fd, encoding="utf-8") as f:
+    with _open_no_follow(path) as f:
         return f.readlines()
+
+
+def read_text_no_follow(path: Path) -> str:
+    """Liest eine Textdatei vollständig, ohne Symlinks zu folgen (SIC-15).
+
+    Args:
+        path: Zu lesende Datei.
+
+    Returns:
+        Vollständiger Dateiinhalt.
+
+    Raises:
+        OSError: Bei Öffnungs- oder Lesefehler.
+    """
+    with _open_no_follow(path) as f:
+        return f.read()
 
 
 def atomic_write(
