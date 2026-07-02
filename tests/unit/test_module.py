@@ -144,3 +144,39 @@ def test_module_control_action_sets_attribute() -> None:
     action = TweakableAction()
     mod.control_action(action, custom_param="hello")
     assert action.custom_param == "hello"  # type: ignore[attr-defined]
+
+
+def test_module_send_message_filters_below_loglevel() -> None:
+    """send_message unterdrückt Meldungen unterhalb der eingestellten Stufe (LOG-02)."""
+    from unittest.mock import MagicMock
+
+    from pifos.ipc import LogLevel
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    conn = MagicMock()
+    mod = SimpleModule(conn=conn, loglevel=LogLevel.WARN)
+    mod.send_message(LogLevel.INFO, "unter_schwelle", None)
+    conn.send.assert_not_called()
+
+
+def test_module_send_message_sends_at_or_above_loglevel() -> None:
+    """send_message sendet Meldungen auf oder über der Schwelle (LOG-02, LOG-03)."""
+    from unittest.mock import MagicMock
+
+    from pifos.ipc import LogLevel, MessageKind
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    conn = MagicMock()
+    mod = SimpleModule(conn=conn, loglevel=LogLevel.WARN)
+    mod.send_message(LogLevel.WARN, "auf_schwelle", "details")
+    conn.send.assert_called_once()
+    msg = conn.send.call_args.args[0]
+    assert msg.kind == MessageKind.LOG
+    assert msg.level == LogLevel.WARN
+    assert msg.name == "auf_schwelle"
