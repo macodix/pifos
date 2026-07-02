@@ -133,3 +133,36 @@ def test_configure_logging_unknown_level_raises(tmp_path: Path) -> None:
     caller = _caller_with_config(tmp_path / "pifos.log", "VERBOSE")
     with pytest.raises(ConfigError):
         caller.configure_logging()
+
+
+def test_default_timeouts_match_class_constants() -> None:
+    """Ohne Angabe übernehmen die Instanz-Zeitlimits die Klassenvorgaben."""
+    caller = PifosCaller()
+    assert caller.terminate_timeout == PifosCaller.TERMINATE_TIMEOUT
+    assert caller.sigterm_timeout == PifosCaller.SIGTERM_TIMEOUT
+    assert caller.sigkill_timeout == PifosCaller.SIGKILL_TIMEOUT
+
+
+def test_constructor_overrides_timeouts() -> None:
+    """Konstruktor-Parameter überschreiben die Vorgabe-Zeitlimits."""
+    caller = PifosCaller(
+        terminate_timeout=1.5, sigterm_timeout=2.5, sigkill_timeout=0.5
+    )
+    assert caller.terminate_timeout == 1.5
+    assert caller.sigterm_timeout == 2.5
+    assert caller.sigkill_timeout == 0.5
+
+
+def test_terminate_module_uses_configured_timeouts() -> None:
+    """terminate_module wartet in jeder Stufe mit dem konfigurierten Zeitlimit."""
+    from unittest.mock import MagicMock
+
+    caller = PifosCaller(
+        terminate_timeout=1.0, sigterm_timeout=2.0, sigkill_timeout=3.0
+    )
+    handle = MagicMock()
+    # Prozess lebt nach IPC-terminate und nach SIGTERM weiter, dann beendet.
+    handle.process.is_alive.side_effect = [True, True]
+    caller.terminate_module(handle)
+    timeouts = [c.kwargs.get("timeout") for c in handle.process.join.call_args_list]
+    assert timeouts == [1.0, 2.0, 3.0]

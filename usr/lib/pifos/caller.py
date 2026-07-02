@@ -82,14 +82,38 @@ class PifosCaller:
         LogLevel.CRITICAL: logging.CRITICAL,
     }
 
-    def __init__(self, loglevel: LogLevel = LogLevel.INFO) -> None:
-        """Initialisiert den Aufrufer mit der angegebenen Logstufe.
+    # Vorgabe-Zeitlimits (Sekunden) der gestuften Beendigung (Kapitel 6).
+    TERMINATE_TIMEOUT: ClassVar[float] = 5.0
+    SIGTERM_TIMEOUT: ClassVar[float] = 5.0
+    SIGKILL_TIMEOUT: ClassVar[float] = 2.0
+
+    def __init__(
+        self,
+        loglevel: LogLevel = LogLevel.INFO,
+        terminate_timeout: float | None = None,
+        sigterm_timeout: float | None = None,
+        sigkill_timeout: float | None = None,
+    ) -> None:
+        """Initialisiert den Aufrufer mit Logstufe und Beendigungs-Zeitlimits.
 
         Args:
             loglevel: Anfangsstufe; Standard: INFO.
+            terminate_timeout: Wartezeit nach IPC-terminate; None nutzt
+                die Vorgabe TERMINATE_TIMEOUT.
+            sigterm_timeout: Wartezeit nach SIGTERM; None nutzt SIGTERM_TIMEOUT.
+            sigkill_timeout: Wartezeit nach SIGKILL; None nutzt SIGKILL_TIMEOUT.
         """
         self.loglevel = loglevel
         self.config: Config | None = None
+        self.terminate_timeout = (
+            self.TERMINATE_TIMEOUT if terminate_timeout is None else terminate_timeout
+        )
+        self.sigterm_timeout = (
+            self.SIGTERM_TIMEOUT if sigterm_timeout is None else sigterm_timeout
+        )
+        self.sigkill_timeout = (
+            self.SIGKILL_TIMEOUT if sigkill_timeout is None else sigkill_timeout
+        )
         self._logger = logging.getLogger(type(self).__name__)
 
     def load_config(self, path: str, format: str) -> None:
@@ -202,13 +226,13 @@ class PifosCaller:
         """
         with contextlib.suppress(Exception):
             self.send_command(handle, "terminate")
-            handle.process.join(timeout=5)
+            handle.process.join(timeout=self.terminate_timeout)
         if handle.process.is_alive():
             handle.process.terminate()
-            handle.process.join(timeout=5)
+            handle.process.join(timeout=self.sigterm_timeout)
         if handle.process.is_alive():
             handle.process.kill()
-            handle.process.join(timeout=2)
+            handle.process.join(timeout=self.sigkill_timeout)
         handle._finished = True
 
     def send_command(
