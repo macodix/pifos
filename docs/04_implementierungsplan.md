@@ -312,6 +312,7 @@ classDiagram
         +loglevel
         +config
         +load_config()
+        +configure_logging()
         +start_module()
         +stop_module()
         +resume_module()
@@ -337,6 +338,7 @@ Beim Start eines Modules wird dem Modul die Config oder ein entsprechender Teil 
 | Methode | Zweck |
 |---------|-------|
 | `load_config(self, path: str, format: str) -> None` | legt ein `Config`-Objekt an, lädt es über `Config.load_file` und stellt es als Instanzvariable `config` bereit (CAL-08) |
+| `configure_logging(self) -> None` | liest `logfile` und `loglevel` aus der Konfiguration, übernimmt die Logstufe und richtet den FileHandler auf die Logdatei (`0600`) ein (LOG-04, SIC-27); nach `load_config` aufzurufen |
 | `start_module(self, module_cls, config=None) -> Handle` | startet ein Modul als Prozess, übergibt Config und Loglevel (CAL-02, STR-01, STR-02, LOG-05) |
 | `stop_module(self, handle) -> None` | hält einen Modulprozess an (CAL-02) |
 | `resume_module(self, handle) -> None` | setzt einen angehaltenen Modulprozess fort (CAL-02) |
@@ -457,7 +459,7 @@ Das Logging übernimmt allein der Aufrufer; Module und Aktionen führen kein eig
 
 ### 7.1 Stufen und Filterung
 
-Das Logging unterscheidet die vier Stufen INFO, WARN, ERROR und CRITICAL, abgebildet als Enum `LogLevel` (LOG-03, Kapitel 6 „Prozessmodell, Steuerung und IPC"). Die vier Stufen bildet das `logging`-Modul der Standardbibliothek im Aufrufer ab. Das Loglevel des Aufrufers ist über die Variable `loglevel` einstellbar (LOG-04).
+Das Logging unterscheidet die vier Stufen INFO, WARN, ERROR und CRITICAL, abgebildet als Enum `LogLevel` (LOG-03, Kapitel 6 „Prozessmodell, Steuerung und IPC"). Die vier Stufen bildet das `logging`-Modul der Standardbibliothek im Aufrufer ab. Das Loglevel des Aufrufers ist über die Variable `loglevel` einstellbar (LOG-04). Logdatei und Loglevel bezieht der Aufrufer aus der Konfiguration: `configure_logging` liest die Schlüssel `logfile` und `loglevel` und richtet den FileHandler ein (Kapitel 5 „Aufrufer-Basisklasse PifosCaller"). Die Methode `write_log` schreibt jede Meldung mit ihrer Stufe, sodass ERROR und CRITICAL auch als solche im Logfile erscheinen.
 
 Der Aufrufer gibt das eingestellte Loglevel beim Start an das Modul weiter (LOG-05, Kapitel 5 „Aufrufer-Basisklasse PifosCaller"). Das Modul kennzeichnet jede `IpcMessage` mit ihrer Stufe (LOG-03) und kann Meldungen unterhalb der Schwelle bereits selbst zurückhalten; es entscheidet, was es sendet (LOG-02). Der Aufrufer entscheidet endgültig, welche der empfangenen Meldungen er ins Logfile aufnimmt (LOG-01, LOG-02). Die doppelte Filterung vermeidet, dass das Modul Meldungen sendet, die der Aufrufer ohnehin verwirft.
 
