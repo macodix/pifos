@@ -23,7 +23,7 @@ Die Konfiguration entkoppelt die Dateiformate von ihren Verwendern. Die zentrale
 
 Jede Formatklasse liest ihre Datei im Konstruktor und stellt `to_dict()` (Konfiguration als `dict`), `raw()` (Rohinhalt) und die statische Methode `write_data(data, path)` bereit. Keine der Klassen nutzt `eval` oder `pickle`.
 
-- **`IniConfig`** (`config/ini_config.py`) liest und schreibt INI-Dateien über `configparser`. Die oberste Ebene sind Sektionsnamen; Werte sind Zeichenketten.
+- **`IniConfig`** (`config/ini_config.py`) liest und schreibt INI-Dateien über `configparser`. Die oberste Ebene sind Sektionsnamen; Werte sind Zeichenketten. Beim Schreiben werden nur Sektionen mit `dict`-Wert berücksichtigt; andere Einträge werden übersprungen.
 - **`JsonConfig`** (`config/json_config.py`) liest und schreibt JSON über das `json`-Modul. Der Inhalt muss ein JSON-Objekt sein, sonst entsteht `ConfigError`.
 - **`TomlConfig`** (`config/toml_config.py`) liest TOML über `tomllib` aus der Standardbibliothek. Das Schreiben nutzt die optionale Bibliothek `tomli-w`; ist sie nicht installiert, meldet `write_data` dies als `ConfigError`.
 

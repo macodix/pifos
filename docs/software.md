@@ -20,3 +20,4 @@
 | Version | Datum | Wer | Änderung |
 |---------|-------|-----|----------|
 | 0.01 | 2026-07-02 | macodix | Erstanlage der Softwaredokumentation als aufgeteiltes Dokument; Kapitel 1 (Überblick und Architektur) ausgearbeitet, Kapitel 2–8 angelegt. |
+| 0.02 | 2026-07-02 | macodix | Korrekturen nach Konsistenzprüfung gegen den Code: resolve_action (Modulname aus Kleinschreibung), Logstufe auf dem Logger statt FileHandler, Beenden ohne suggerierten Flush-Schritt, IniConfig-Schreibverhalten ergänzt. |

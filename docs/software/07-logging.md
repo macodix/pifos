@@ -8,7 +8,7 @@ Das Logging unterscheidet die vier Stufen INFO, WARN, ERROR und CRITICAL, abgebi
 
 Logdatei und Logstufe bezieht der Aufrufer aus der Konfiguration: `configure_logging` liest die Schlüssel `logfile` und `loglevel`, übernimmt die Stufe und richtet den FileHandler auf die Logdatei ein. Die Meldungen schreibt `write_log` mit der Stufe der jeweiligen Meldung, sodass ERROR und CRITICAL auch als solche im Logfile erscheinen.
 
-Die Filterung greift an zwei Stellen. Das Modul kennzeichnet jede `IpcMessage` mit ihrer Stufe und hält Meldungen unterhalb der eingestellten Schwelle bereits selbst zurück (`send_message` über `_below_loglevel`); es sendet also gar nicht erst, was der Aufrufer ohnehin verwerfen würde. Der Aufrufer setzt die Schwelle zusätzlich im FileHandler, sodass nur Meldungen ab der eingestellten Stufe ins Logfile gelangen.
+Die Filterung greift an zwei Stellen. Das Modul kennzeichnet jede `IpcMessage` mit ihrer Stufe und hält Meldungen unterhalb der eingestellten Schwelle bereits selbst zurück (`send_message` über `_below_loglevel`); es sendet also gar nicht erst, was der Aufrufer ohnehin verwerfen würde. Der Aufrufer setzt die Schwelle zusätzlich auf dem Logger, sodass nur Meldungen ab der eingestellten Stufe ins Logfile gelangen.
 
 ## 7.2. Schutz protokollierter Fremddaten
 

@@ -38,6 +38,6 @@ Anschließend läuft die Befehlsschleife. Sie verarbeitet nur `COMMAND`- und `RE
 
 ## 6.6. Beenden und Eskalation
 
-Das Beenden erfolgt gestuft in drei Schritten. Zuerst sendet der Aufrufer den IPC-Beenden-Befehl; das Modul schließt geordnet ab und stellt zuvor seine ausstehenden Meldungen zu. Reagiert es nicht innerhalb des Zeitfensters, folgt SIGTERM über `Process.terminate()`, danach als letzte Stufe SIGKILL über `Process.kill()`. Der Regelfall ist der geordnete Abschluss über IPC; SIGTERM und SIGKILL sind die Rückfallebene für nicht reagierende Module.
+Das Beenden erfolgt gestuft in drei Schritten. Zuerst sendet der Aufrufer den IPC-Beenden-Befehl; das Modul beendet daraufhin seine Befehlsschleife geordnet. Da die Pipe synchron ist, erreichen bereits gesendete Meldungen den Aufrufer. Reagiert das Modul nicht innerhalb des Zeitfensters, folgt SIGTERM über `Process.terminate()`, danach als letzte Stufe SIGKILL über `Process.kill()`. Der Regelfall ist der geordnete Abschluss über IPC; SIGTERM und SIGKILL sind die Rückfallebene für nicht reagierende Module.
 
 Jede Stufe hat ein eigenes Zeitfenster. Die drei Wartezeiten sind Konstruktor-Parameter des `PifosCaller` (`terminate_timeout`, `sigterm_timeout`, `sigkill_timeout`) mit den Klassenvorgaben `TERMINATE_TIMEOUT` (5 s), `SIGTERM_TIMEOUT` (5 s) und `SIGKILL_TIMEOUT` (2 s). Ein konkreter Aufrufer kann sie überschreiben, etwa mit Werten aus seiner Konfiguration.
