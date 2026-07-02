@@ -21,4 +21,4 @@ Der Modulprozess läuft getrennt vom Aufrufer; Ausnahmen können nicht direkt ge
 
 Beendet sich ein Modul wegen eines als CRITICAL eingestuften Fehlers, stellt es über die synchrone Pipe zuerst sicher, dass die Ausnahme-Meldung den Aufrufer noch erreicht, bevor der Prozess endet. Bei einer unerwarteten Ausnahme in der Hauptschleife wird die `EXCEPTION`-Meldung zunächst zugestellt und die Verbindung anschließend geschlossen.
 
-Auf Aktionsebene sichert `CopyFileAction` den Zustand: Das Kopieren läuft über eine Temp-Datei mit atomarem Austausch; schlägt es fehl, bleibt die bestehende Zieldatei unverändert und die Temp-Datei wird entfernt.
+Auf Aktionsebene sichern die dateiverändernden Aktionen den Zustand: Geschrieben wird über eine Temp-Datei mit atomarem Austausch; schlägt es fehl, bleibt die bestehende Zieldatei unverändert und die Temp-Datei wird entfernt (siehe Kapitel 2, Aktionen, Abschnitt „Gemeinsames Schutzverhalten der dateiverändernden Aktionen").
