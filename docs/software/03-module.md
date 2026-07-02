@@ -15,7 +15,7 @@ Die Basisklasse stellt folgende Methoden bereit:
 | `check_config(config) -> None` | liest die in `CONFIG` genannten Schlüssel aus dem `Config`-Objekt und legt sie als gleichnamige Instanzvariablen ab; fehlt ein Pflichtwert, entsteht `ConfigError` |
 | `run_action(action) -> int` | führt eine Aktion aus und übernimmt deren Status: 0 bei `finished`, sonst 1; eine `ActionError` wird zu Rückgabewert 1 |
 | `control_action(action, **options) -> None` | setzt die übergebenen Schlüssel-Wert-Paare als Attribute der Aktion |
-| `resolve_action(name) -> type[Action]` | importiert das Modul `pifos.actions.<name in Kleinschreibung>` und liest daraus die Klasse `<name>`; ist sie nicht auffindbar oder keine `Action`-Unterklasse, entsteht `ModuleError` |
+| `resolve_action(name) -> type[Action]` | importiert das Modul `pifos.actions.<klassenname in snake_case>` (z. B. `SysCmdAction` → `sys_cmd_action`) und liest daraus die Klasse `<name>`; ermöglicht die Auswahl einer Aktion über ihren Namen, etwa aus der Konfiguration; nicht auffindbar oder keine `Action`-Unterklasse → `ModuleError` |
 | `send_message(level, name, payload) -> None` | reicht eine Meldung an den Aufrufer; Meldungen unterhalb der eingestellten Logstufe werden zurückgehalten (siehe [→ Logging](07-logging.md)) |
 | `receive_message() -> IpcMessage` | nimmt einen Befehl des Aufrufers an (blockierend) |
 | `check() -> bool \| None` | optionale Überprüfung der Modulwirkung; überschreibbar, Standard `None` |
