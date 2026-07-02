@@ -87,6 +87,88 @@ def test_block_in_file_action_absent_removes_block(tmp_path: Path) -> None:
     assert path.read_text(encoding="utf-8") == "vor\nnach\n"
 
 
+def test_block_in_file_action_absent_removes_separator_blank_line(
+    tmp_path: Path,
+) -> None:
+    """absent entfernt auch die Trenner-Leerzeile vor der Begin-Markerzeile."""
+    path = tmp_path / "config.txt"
+    path.write_text("vor\n\n# BEGIN block\ninhalt\n# END block\n", encoding="utf-8")
+
+    action = BlockInFileAction(
+        str(path), "inhalt", marker="block", state="absent", safe_mode=False
+    )
+    action.run()
+
+    assert path.read_text(encoding="utf-8") == "vor\n"
+
+
+def test_block_in_file_action_absent_keeps_content_line_without_separator(
+    tmp_path: Path,
+) -> None:
+    """Ohne Trenner-Leerzeile bleibt eine inhaltlich gefüllte Zeile davor erhalten."""
+    path = tmp_path / "config.txt"
+    path.write_text("vor\n# BEGIN block\ninhalt\n# END block\nnach\n", encoding="utf-8")
+
+    action = BlockInFileAction(
+        str(path), "inhalt", marker="block", state="absent", safe_mode=False
+    )
+    action.run()
+
+    assert path.read_text(encoding="utf-8") == "vor\nnach\n"
+
+
+def test_block_in_file_action_present_absent_round_trip_restores_original(
+    tmp_path: Path,
+) -> None:
+    """present (Neuanlage) gefolgt von absent stellt den Ausgangsinhalt wieder her."""
+    path = tmp_path / "hosts"
+    original = "127.0.0.1 localhost\n"
+    path.write_text(original, encoding="utf-8")
+
+    present_action = BlockInFileAction(
+        str(path), "10.0.0.1 intern", marker="pifos-hosts", safe_mode=False
+    )
+    present_action.run()
+    assert path.read_text(encoding="utf-8") != original
+
+    absent_action = BlockInFileAction(
+        str(path),
+        "10.0.0.1 intern",
+        marker="pifos-hosts",
+        state="absent",
+        safe_mode=False,
+    )
+    absent_action.run()
+
+    assert path.read_text(encoding="utf-8") == original
+
+
+def test_block_in_file_action_present_absent_double_cycle_is_idempotent(
+    tmp_path: Path,
+) -> None:
+    """Zwei present/absent-Zyklen hintereinander summieren keine Leerzeilen auf."""
+    path = tmp_path / "hosts"
+    original = "127.0.0.1 localhost\n"
+    path.write_text(original, encoding="utf-8")
+
+    for _ in range(2):
+        present_action = BlockInFileAction(
+            str(path), "10.0.0.1 intern", marker="pifos-hosts", safe_mode=False
+        )
+        present_action.run()
+
+        absent_action = BlockInFileAction(
+            str(path),
+            "10.0.0.1 intern",
+            marker="pifos-hosts",
+            state="absent",
+            safe_mode=False,
+        )
+        absent_action.run()
+
+        assert path.read_text(encoding="utf-8") == original
+
+
 def test_block_in_file_action_absent_missing_block_no_change(tmp_path: Path) -> None:
     """absent ohne vorhandenen Block ändert die Datei nicht."""
     path = tmp_path / "config.txt"

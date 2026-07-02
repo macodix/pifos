@@ -29,8 +29,11 @@ class BlockInFileAction(Action):
     Leerzeile davor am Dateiende angefügt.
 
     state="absent": Sind beide Markerzeilen vorhanden, werden sie samt
-    eingerahmtem Inhalt entfernt; ohne vollständige Markerung entfällt
-    die Änderung.
+    eingerahmtem Inhalt entfernt. Eine unmittelbar vor der Begin-
+    Markerzeile stehende Leerzeile (der beim Anfügen eingefügte Trenner)
+    wird dabei ebenfalls entfernt, sofern vorhanden — damit ein
+    present/absent-Rundlauf den ursprünglichen Inhalt wiederherstellt.
+    Ohne vollständige Markerung entfällt die Änderung.
 
     Ist eine Änderung nötig, wird die Zieldatei vor dem Schreiben nach
     safe-mode-Muster gesichert (AKT-06, AKT-07); ist keine Änderung
@@ -234,6 +237,13 @@ class BlockInFileAction(Action):
     ) -> tuple[list[str], bool]:
         """Entfernt den Block samt Markerzeilen, falls vorhanden.
 
+        Eine unmittelbar vor der Begin-Markerzeile stehende Leerzeile wird
+        zusammen mit dem Block entfernt (Trenner-Leerzeile, die
+        _apply_present beim Anfügen einfügt) — sonst wäre die Aktion im
+        present/absent-Rundlauf nicht idempotent, da sich diese Leerzeile
+        bei wiederholten Zyklen aufsummieren würde. Eine inhaltlich
+        gefüllte Zeile vor dem Block bleibt unangetastet.
+
         Args:
             lines: Aktuelle Zeilen der Datei.
             begin_marker: Text der Begin-Markerzeile.
@@ -246,7 +256,10 @@ class BlockInFileAction(Action):
         if found is None:
             return lines, False
         begin_idx, end_idx = found
-        new_lines = lines[:begin_idx] + lines[end_idx + 1 :]
+        remove_start = begin_idx
+        if begin_idx > 0 and lines[begin_idx - 1].rstrip("\n") == "":
+            remove_start = begin_idx - 1
+        new_lines = lines[:remove_start] + lines[end_idx + 1 :]
         return new_lines, True
 
     def _write(self, path: Path, mode: int, new_lines: list[str]) -> None:
