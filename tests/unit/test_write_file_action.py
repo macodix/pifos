@@ -111,6 +111,31 @@ def test_write_file_action_safe_mode_false_overwrites_without_backup(
     assert not (tmp_path / "ziel.txt.bak").exists()
 
 
+def test_write_file_action_symlink_dst_without_explicit_mode_raises(
+    tmp_path: Path,
+) -> None:
+    """Symlink als Ziel ohne explizites mode erzeugt ActionError.
+
+    Ohne O_NOFOLLOW würden die Rechte des Symlinks (typischerweise
+    0o777) übernommen und beim atomaren Austausch auf eine reguläre
+    Datei angewendet — eine Rechteausweitung (SIC-13).
+    """
+    real_target = tmp_path / "echte_datei.txt"
+    real_target.write_text("alt", encoding="utf-8")
+    real_target.chmod(0o600)
+    dst = tmp_path / "symlink.txt"
+    dst.symlink_to(real_target)
+
+    action = WriteFileAction(str(dst), "neu", safe_mode=False)
+    with pytest.raises(ActionError):
+        action.run()
+
+    assert action.status == "failed"
+    assert dst.is_symlink()
+    assert real_target.read_text(encoding="utf-8") == "alt"
+    assert stat.S_IMODE(real_target.stat().st_mode) == 0o600
+
+
 def test_write_file_action_invalid_backup_location(tmp_path: Path) -> None:
     """Ungültiger Sicherungsort erzeugt ActionError."""
     dst = tmp_path / "ziel.txt"

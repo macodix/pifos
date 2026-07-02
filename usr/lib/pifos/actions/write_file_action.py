@@ -141,17 +141,26 @@ class WriteFileAction(Action):
             dst_path: Zieldatei.
             exists: True, wenn die Zieldatei bereits existiert.
 
+        Die Rechte werden über einen O_NOFOLLOW-Deskriptor ermittelt
+        (SIC-15): Ist dst_path ein Symlink, schlägt das Öffnen fehl
+        (ELOOP), statt die Rechte des Symlinks (typischerweise 0o777)
+        zu übernehmen und damit beim Schreiben auszuweiten (SIC-13).
+
         Returns:
             Zu setzende Rechte.
 
         Raises:
-            OSError: Wenn die Rechte der bestehenden Zieldatei nicht
-                lesbar sind.
+            OSError: Wenn die bestehende Zieldatei nicht geöffnet werden
+                kann — u. a. wenn sie ein Symlink ist (ELOOP).
         """
         if self.mode is not None:
             return self.mode
         if exists:
-            return stat.S_IMODE(os.lstat(dst_path).st_mode)
+            fd = os.open(str(dst_path), os.O_RDONLY | os.O_NOFOLLOW)
+            try:
+                return stat.S_IMODE(os.fstat(fd).st_mode)
+            finally:
+                os.close(fd)
         return 0o600
 
     def _write(self, dst_path: Path, mode: int) -> None:
