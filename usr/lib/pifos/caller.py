@@ -8,11 +8,13 @@ import contextlib
 import logging
 import multiprocessing
 import multiprocessing.connection
+import os
 from dataclasses import dataclass, field
 from multiprocessing.connection import Connection
 from typing import ClassVar, cast
 
 from pifos.config.config import Config
+from pifos.errors import ConfigError
 from pifos.ipc import IpcMessage, LogLevel, MessageKind
 from pifos.module import Module
 from pifos.runner import module_runner
@@ -102,6 +104,44 @@ class PifosCaller:
         cfg = Config()
         cfg.load_file(path, format)
         self.config = cfg
+
+    def configure_logging(self) -> None:
+        """Richtet Logdatei und Logstufe aus der geladenen Konfiguration ein.
+
+        Liest die Schlüssel `logfile` und `loglevel` aus der Konfiguration,
+        übernimmt die Logstufe (LOG-04) und legt einen FileHandler auf die
+        Logdatei an. Die Logdatei wird mit engen Rechten `0600` angelegt bzw.
+        auf diese Rechte gezogen (SIC-27). Nach `load_config` aufzurufen.
+
+        Raises:
+            ConfigError: Wenn keine Konfiguration geladen ist, ein Schlüssel
+                fehlt oder die Logstufe unbekannt ist.
+        """
+        if self.config is None:
+            raise ConfigError("Keine Konfiguration geladen; erst load_config aufrufen")
+        logfile = str(self.config.get_value("logfile"))
+        raw_level = str(self.config.get_value("loglevel"))
+        try:
+            self.loglevel = LogLevel(raw_level)
+        except ValueError as e:
+            raise ConfigError(f"Unbekannte Logstufe: {raw_level!r}") from e
+
+        # Logdatei mit engen Rechten anlegen bzw. Rechte anziehen (SIC-27)
+        fd = os.open(logfile, os.O_CREAT | os.O_APPEND, 0o600)
+        os.close(fd)
+        os.chmod(logfile, 0o600)
+
+        handler = logging.FileHandler(logfile)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+        )
+        # Bestehende Handler ersetzen, damit configure_logging idempotent ist.
+        for old in list(self._logger.handlers):
+            self._logger.removeHandler(old)
+            old.close()
+        self._logger.addHandler(handler)
+        self._logger.setLevel(self._PY_LEVEL[self.loglevel])
+        self._logger.propagate = False
 
     def start_module(
         self,
