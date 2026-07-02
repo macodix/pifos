@@ -24,6 +24,15 @@ class AptAction(Action):
     delegiert den Prozessaufruf an SysCmdAction und übernimmt deren
     stdout, stderr und returncode.
 
+    Vor der Paketliste steht im Kommando immer der Optionsterminator "--",
+    damit apt-get keinen Paketnamen als Option interpretiert. Zusätzlich
+    weist die Aktion Paketnamen mit führendem "-" mit ActionError zurück.
+    Das ist keine inhaltliche Prüfung der Paketnamen (die bleibt beim
+    aufrufenden Modul), sondern Schutz des Kommandoaufbaus vor
+    Optionsinjektion — ein mit "-" beginnender Eintrag kann durch "--"
+    allein bereits nicht mehr als Option wirken, wird hier aber als
+    zusätzliche Verteidigungsebene dennoch abgelehnt.
+
     Attributes:
         PARAMS: Parameternamen der Aktion.
         packages: Zu installierende oder entfernende Paketnamen.
@@ -75,12 +84,21 @@ class AptAction(Action):
             Aktueller Status nach der Ausführung ("finished" oder "failed").
 
         Raises:
-            ActionError: Bei Timeout, Returncode != 0 oder Startfehler
-                von apt-get.
+            ActionError: Bei Paketname mit führendem "-" (Schutz vor
+                Optionsinjektion), bei Timeout, Returncode != 0 oder
+                Startfehler von apt-get.
         """
         self.status = "running"
+        for package in self.packages:
+            if package.startswith("-"):
+                self.status = "failed"
+                raise ActionError(
+                    f"Paketname beginnt mit '-', als Option interpretierbar:"
+                    f" {package!r}"
+                )
+
         subcommand = "remove" if self.state == "absent" else "install"
-        command = [_APT_GET, subcommand, "-y", *self.packages]
+        command = [_APT_GET, subcommand, "-y", "--", *self.packages]
         env = {
             "DEBIAN_FRONTEND": "noninteractive",
             "PATH": _CONTROLLED_PATH,

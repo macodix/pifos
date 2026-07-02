@@ -76,6 +76,7 @@ def test_apt_action_install_command_and_env() -> None:
         "/usr/bin/apt-get",
         "install",
         "-y",
+        "--",
         "curl",
         "jq",
     ]
@@ -91,7 +92,13 @@ def test_apt_action_absent_builds_remove_command() -> None:
     action = AptAction(["curl"], state="absent")
     action.run()
 
-    assert _FakePopen.last_command == ["/usr/bin/apt-get", "remove", "-y", "curl"]
+    assert _FakePopen.last_command == [
+        "/usr/bin/apt-get",
+        "remove",
+        "-y",
+        "--",
+        "curl",
+    ]
 
 
 def test_apt_action_no_shell_used() -> None:
@@ -101,6 +108,23 @@ def test_apt_action_no_shell_used() -> None:
 
     assert "paket; rm -rf /" in _FakePopen.last_command
     assert _FakePopen.last_command[0] == "/usr/bin/apt-get"
+
+
+def test_apt_action_option_terminator_before_packages() -> None:
+    """Der Optionsterminator '--' steht immer vor der Paketliste."""
+    action = AptAction(["curl", "jq"], state="present")
+    action.run()
+
+    assert _FakePopen.last_command.index("--") == 3
+    assert _FakePopen.last_command[4:] == ["curl", "jq"]
+
+
+def test_apt_action_package_with_leading_dash_rejected() -> None:
+    """Ein Paketname mit führendem '-' wird abgelehnt (Optionsinjektion)."""
+    action = AptAction(["-foo"], state="present")
+    with pytest.raises(ActionError, match="als Option interpretierbar"):
+        action.run()
+    assert action.status == "failed"
 
 
 def test_apt_action_failure_sets_status_and_propagates_output() -> None:
