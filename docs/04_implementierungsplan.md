@@ -311,6 +311,9 @@ classDiagram
         <<abstract>>
         +loglevel
         +config
+        +terminate_timeout
+        +sigterm_timeout
+        +sigkill_timeout
         +load_config()
         +configure_logging()
         +start_module()
@@ -411,6 +414,8 @@ Die Signale SIGSTOP und SIGCONT sind nicht aufgenommen. Sie hielten den Prozess 
 ### 6.6 Beenden und Eskalation
 
 Das Beenden eines Modulprozesses erfolgt gestuft in drei Schritten (CAL-02). Zuerst sendet der Aufrufer den IPC-Beenden-Befehl; das Modul schließt geordnet ab und stellt dabei zuerst seine ausstehenden Meldungen zu (EXC-03). Reagiert das Modul nicht innerhalb eines Zeitfensters, folgt SIGTERM über `Process.terminate()`, danach als letzte Stufe SIGKILL über `Process.kill()`. Der Regelfall ist der geordnete Abschluss über IPC; SIGTERM und SIGKILL sind die Rückfallebene für nicht reagierende Module.
+
+Jede der drei Stufen hat ein eigenes Zeitfenster. Die drei Wartezeiten sind Konstruktor-Parameter des `PifosCaller` (`terminate_timeout`, `sigterm_timeout`, `sigkill_timeout`) mit den Klassenvorgaben `TERMINATE_TIMEOUT`, `SIGTERM_TIMEOUT` und `SIGKILL_TIMEOUT`; ein konkreter Aufrufer kann sie überschreiben, etwa mit Werten aus seiner Konfiguration.
 
 Das folgende Sequenzdiagramm zeigt den zeitlichen Ablauf zwischen Aufrufer und Modul über IPC: der Aufrufer beschafft die Konfiguration, startet den Modulprozess, sendet Befehle hinab und erhält Meldungen und Ergebnisse hinauf. Das Modul steuert dabei seine Aktionen und entscheidet, welche Meldungen es weiterreicht (STR-01 bis STR-04, LOG-02).
 
