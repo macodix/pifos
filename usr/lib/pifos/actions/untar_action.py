@@ -33,21 +33,44 @@ class UntarAction(Action):
     Mit overwrite=True werden bestehende Dateien überschrieben. Es wird
     keine Sicherung einzelner Dateien angelegt (kein safe-mode-Backup).
 
+    Gegen Dekompressionsangriffe (z. B. gzip-Bomben, Massen an Mitgliedern)
+    prüft die Aktion vor der Extraktion die Mitgliederzahl gegen
+    max_members und die Summe der unkomprimierten Größen (member.size)
+    gegen max_total_size; eine Überschreitung erzeugt ActionError ohne
+    Extraktion.
+
     Attributes:
         PARAMS: Parameternamen der Aktion.
         src: Pfad des Archivs.
         dst_dir: Zielverzeichnis; muss existieren.
         overwrite: Erlaubt das Überschreiben bestehender Dateien im
             Zielverzeichnis. Voreinstellung False.
+        max_members: Maximale Anzahl Mitglieder im Archiv. Voreinstellung
+            10000.
+        max_total_size: Maximale Summe der unkomprimierten Mitglieder-
+            größen in Bytes. Voreinstellung 1 GiB (1073741824).
 
     Example:
         action = UntarAction("/var/backups/ssh.tar.gz", "/restore/ssh")
         action.run()
     """
 
-    PARAMS: ClassVar[list[str]] = ["src", "dst_dir", "overwrite"]
+    PARAMS: ClassVar[list[str]] = [
+        "src",
+        "dst_dir",
+        "overwrite",
+        "max_members",
+        "max_total_size",
+    ]
 
-    def __init__(self, src: str, dst_dir: str, overwrite: bool = False) -> None:
+    def __init__(
+        self,
+        src: str,
+        dst_dir: str,
+        overwrite: bool = False,
+        max_members: int = 10_000,
+        max_total_size: int = 1024**3,
+    ) -> None:
         """Initialisiert die Tar-Archiv-Extraktions-Aktion.
 
         Args:
@@ -55,11 +78,18 @@ class UntarAction(Action):
             dst_dir: Zielverzeichnis. Muss existieren.
             overwrite: Erlaubt das Überschreiben bestehender Dateien im
                 Zielverzeichnis. Voreinstellung False.
+            max_members: Maximale Anzahl Mitglieder im Archiv, gegen
+                Massen-Mitglieder-Angriffe. Voreinstellung 10000.
+            max_total_size: Maximale Summe der unkomprimierten
+                Mitgliedergrößen in Bytes, gegen Dekompressionsangriffe
+                (z. B. gzip-Bomben). Voreinstellung 1 GiB (1073741824).
         """
         super().__init__()
         self.src = src
         self.dst_dir = dst_dir
         self.overwrite = overwrite
+        self.max_members = max_members
+        self.max_total_size = max_total_size
 
     def run(self) -> str:
         """Entpackt das Archiv und liefert den Ausführungsstatus.
@@ -69,6 +99,7 @@ class UntarAction(Action):
 
         Raises:
             ActionError: Bei fehlendem Archiv, fehlendem Zielverzeichnis,
+                Überschreitung von max_members oder max_total_size,
                 Dateikollision ohne overwrite=True oder Extraktionsfehler
                 (u. a. bei Verstoß gegen den Extraktionsfilter "data").
         """
@@ -99,20 +130,48 @@ class UntarAction(Action):
         self.status = "finished"
         return self.status
 
+    def _check_limits(self, members: list[tarfile.TarInfo]) -> None:
+        """Prüft Mitgliederzahl und Gesamtgröße gegen die konfigurierten Grenzen.
+
+        Schützt vor Dekompressionsangriffen (z. B. gzip-Bomben) und
+        Massen-Mitglieder-Angriffen, indem vor der Extraktion abgebrochen
+        wird statt während einer bereits laufenden Extraktion.
+
+        Args:
+            members: Mitglieder des Archivs (tar.getmembers()).
+
+        Raises:
+            ActionError: Bei Überschreitung von max_members oder
+                max_total_size.
+        """
+        if len(members) > self.max_members:
+            raise ActionError(
+                f"Archiv enthält zu viele Mitglieder: {len(members)}"
+                f" > max_members={self.max_members}"
+            )
+        total_size = sum(member.size for member in members)
+        if total_size > self.max_total_size:
+            raise ActionError(
+                f"Unkomprimierte Archivgröße zu groß: {total_size} Bytes"
+                f" > max_total_size={self.max_total_size} Bytes"
+            )
+
     def _extract(self, src_path: Path, dst_path: Path) -> None:
-        """Prüft auf Kollisionen und entpackt das Archiv mit filter="data".
+        """Prüft Grenzen und Kollisionen, entpackt das Archiv mit filter="data".
 
         Args:
             src_path: Archiv.
             dst_path: Zielverzeichnis.
 
         Raises:
-            ActionError: Bei Dateikollision ohne overwrite=True.
+            ActionError: Bei Überschreitung von max_members/max_total_size
+                oder bei Dateikollision ohne overwrite=True.
             tarfile.TarError: Bei Verstoß gegen den Extraktionsfilter oder
                 sonstigem Extraktionsfehler.
         """
         with tarfile.open(str(src_path), mode="r:*") as tar:
             members = tar.getmembers()
+            self._check_limits(members)
             if not self.overwrite:
                 collisions = [
                     member.name

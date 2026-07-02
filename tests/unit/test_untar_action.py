@@ -173,6 +173,58 @@ def test_untar_action_absolute_path_member_neutralized(tmp_path: Path) -> None:
     assert landed[0].is_relative_to(dst_dir)
 
 
+def test_untar_action_too_many_members_rejected(tmp_path: Path) -> None:
+    """Überschreitung von max_members erzeugt ActionError, nichts wird entpackt."""
+    archive = tmp_path / "archiv.tar.gz"
+    _make_archive(archive, {"a.txt": b"eins", "b.txt": b"zwei", "c.txt": b"drei"})
+    dst_dir = tmp_path / "ziel"
+    dst_dir.mkdir()
+
+    action = UntarAction(str(archive), str(dst_dir), max_members=2)
+    with pytest.raises(ActionError, match="zu viele Mitglieder"):
+        action.run()
+
+    assert action.status == "failed"
+    assert list(dst_dir.iterdir()) == []
+
+
+def test_untar_action_total_size_exceeded_rejected(tmp_path: Path) -> None:
+    """Überschreitung von max_total_size erzeugt ActionError, nichts wird entpackt."""
+    archive = tmp_path / "archiv.tar.gz"
+    _make_archive(archive, {"a.txt": b"x" * 1000})
+    dst_dir = tmp_path / "ziel"
+    dst_dir.mkdir()
+
+    action = UntarAction(str(archive), str(dst_dir), max_total_size=100)
+    with pytest.raises(ActionError, match="Unkomprimierte Archivgröße zu groß"):
+        action.run()
+
+    assert action.status == "failed"
+    assert list(dst_dir.iterdir()) == []
+
+
+def test_untar_action_within_limits_succeeds(tmp_path: Path) -> None:
+    """Innerhalb der Grenzen wird normal entpackt."""
+    archive = tmp_path / "archiv.tar.gz"
+    _make_archive(archive, {"a.txt": b"inhalt"})
+    dst_dir = tmp_path / "ziel"
+    dst_dir.mkdir()
+
+    action = UntarAction(
+        str(archive), str(dst_dir), max_members=10, max_total_size=1000
+    )
+    result = action.run()
+
+    assert result == "finished"
+    assert (dst_dir / "a.txt").read_bytes() == b"inhalt"
+
+
 def test_untar_action_params() -> None:
     """PARAMS enthält die erwarteten Parameternamen."""
-    assert UntarAction.PARAMS == ["src", "dst_dir", "overwrite"]
+    assert UntarAction.PARAMS == [
+        "src",
+        "dst_dir",
+        "overwrite",
+        "max_members",
+        "max_total_size",
+    ]
