@@ -22,3 +22,4 @@
 | 0.01 | 2026-07-02 | macodix | Erstanlage der Softwaredokumentation als aufgeteiltes Dokument; Kapitel 1 (Überblick und Architektur) ausgearbeitet, Kapitel 2–8 angelegt. |
 | 0.02 | 2026-07-02 | macodix | Korrekturen nach Konsistenzprüfung gegen den Code: resolve_action (Modulname aus Kleinschreibung), Logstufe auf dem Logger statt FileHandler, Beenden ohne suggerierten Flush-Schritt, IniConfig-Schreibverhalten ergänzt. |
 | 0.03 | 2026-07-02 | macodix | Kap. 3: resolve_action an die Code-Korrektur angepasst — Modulname aus dem Klassennamen in snake_case, Zweck (Aktionswahl über Namen aus der Konfiguration) ergänzt. |
+| 0.04 | 2026-07-02 | macodix | Kap. 3: Abschnitt 3.2 „Aktion über die Konfiguration wählen" mit Muster (resolve_action → Instanz mit Config-Parametern → run_action) ergänzt. |

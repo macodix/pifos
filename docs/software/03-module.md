@@ -22,3 +22,18 @@ Die Basisklasse stellt folgende Methoden bereit:
 | `rollback() -> bool \| None` | optionaler Rückbau der Modulwirkung; überschreibbar, Standard `None` |
 
 `send_message` bildet die Meldung auf eine `IpcMessage` ab: mit Logstufe als `LOG`, ohne Stufe als `MESSAGE`. Die Filterung unterhalb der Schwelle übernimmt intern `_below_loglevel`. `check` und `rollback` liefern `None`, solange eine Modulklasse sie nicht überschreibt; ein überschriebenes `check` gibt `True` bei bestätigter Wirkung und `False` bei Abweichung zurück, `rollback` entsprechend `True`/`False` für gelungenen oder fehlgeschlagenen Rückbau.
+
+## 3.2. Aktion über die Konfiguration wählen
+
+`resolve_action` erlaubt einem Modul, die auszuführende Aktion über ihren Namen zu bestimmen — etwa aus der Konfiguration. Das Modul deklariert die benötigten Schlüssel in `CONFIG` (den Aktionsnamen und deren Parameter), löst die Klasse mit `resolve_action` auf, erzeugt die Instanz mit den Parametern aus der Konfiguration und führt sie über `run_action` aus. So kommen Aktion und Parameter vollständig aus der Konfiguration, ohne festen Import im Modul.
+
+```python
+class AktionModul(Module):
+    CONFIG = ["action", "params"]
+
+    def start(self) -> int:
+        action_cls = self.resolve_action(self.action)
+        action = action_cls(**self.params)
+        return self.run_action(action)
+```
+
