@@ -5,6 +5,7 @@ und kommuniziert über IPC mit dem aufrufenden Prozess (MOD-01, MOD-05).
 """
 
 import importlib
+import re
 from abc import ABC, abstractmethod
 from multiprocessing.connection import Connection
 from typing import ClassVar
@@ -13,6 +14,23 @@ from pifos.action import Action
 from pifos.config.config import Config
 from pifos.errors import ActionError, ConfigError, ModuleError
 from pifos.ipc import IpcMessage, LogLevel, MessageKind
+
+
+def _module_name_for(class_name: str) -> str:
+    """Bildet den Modulnamen (snake_case) zum Aktions-Klassennamen (CamelCase).
+
+    Beispiele: "SysCmdAction" -> "sys_cmd_action", "CopyFileAction" ->
+    "copy_file_action". Aufeinanderfolgende Großbuchstaben (Akronyme) werden
+    korrekt behandelt: "HTTPServerAction" -> "http_server_action".
+
+    Args:
+        class_name: Klassenname der Aktion in CamelCase.
+
+    Returns:
+        Modulname in snake_case.
+    """
+    s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", class_name)
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
 class Module(ABC):
@@ -103,12 +121,15 @@ class Module(ABC):
             setattr(action, key, value)
 
     def resolve_action(self, name: str) -> type[Action]:
-        """Schlägt eine Aktionsklasse im Aktions-Verzeichnis nach.
+        """Schlägt eine Aktionsklasse im Aktions-Unterpaket nach.
 
-        Erwartet ein Modul pifos.actions.<name> mit einer gleichnamigen Klasse.
+        Der Modulname wird aus dem Klassennamen in snake_case gebildet:
+        `SysCmdAction` → Modul `pifos.actions.sys_cmd_action`, aus dem die
+        gleichnamige Klasse gelesen wird. Ermöglicht die Auswahl einer
+        Aktion über ihren Namen, etwa aus der Konfiguration.
 
         Args:
-            name: Klassenname der gesuchten Aktion.
+            name: Klassenname der gesuchten Aktion in CamelCase.
 
         Returns:
             Die Action-Klasse.
@@ -118,7 +139,7 @@ class Module(ABC):
                 Action-Unterklasse ist.
         """
         try:
-            mod = importlib.import_module(f"pifos.actions.{name.lower()}")
+            mod = importlib.import_module(f"pifos.actions.{_module_name_for(name)}")
             cls = getattr(mod, name)
         except (ImportError, AttributeError) as e:
             raise ModuleError(f"Aktion '{name}' nicht gefunden") from e

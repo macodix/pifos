@@ -146,6 +146,76 @@ def test_module_control_action_sets_attribute() -> None:
     assert action.custom_param == "hello"  # type: ignore[attr-defined]
 
 
+def test_module_name_for_maps_camel_to_snake() -> None:
+    """Der Modulname wird korrekt aus dem CamelCase-Klassennamen gebildet."""
+    from pifos.module import _module_name_for
+
+    assert _module_name_for("SysCmdAction") == "sys_cmd_action"
+    assert _module_name_for("CopyFileAction") == "copy_file_action"
+    assert _module_name_for("HTTPServerAction") == "http_server_action"
+
+
+def test_module_resolve_action_finds_existing_actions() -> None:
+    """resolve_action liefert die vorhandenen Aktionsklassen anhand des Namens."""
+    from unittest.mock import MagicMock
+
+    from pifos.actions.copy_file_action import CopyFileAction
+    from pifos.actions.sys_cmd_action import SysCmdAction
+    from pifos.ipc import LogLevel
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    assert mod.resolve_action("SysCmdAction") is SysCmdAction
+    assert mod.resolve_action("CopyFileAction") is CopyFileAction
+
+
+def test_module_resolve_action_unknown_raises() -> None:
+    """Eine unbekannte Aktion führt zu ModuleError."""
+    from unittest.mock import MagicMock
+
+    from pifos.errors import ModuleError
+    from pifos.ipc import LogLevel
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    with pytest.raises(ModuleError):
+        mod.resolve_action("NichtVorhandenAction")
+
+
+def test_module_resolve_action_non_action_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ein Name, der auf keine Action-Unterklasse zeigt, führt zu ModuleError."""
+    import sys
+    import types
+    from unittest.mock import MagicMock
+
+    from pifos.errors import ModuleError
+    from pifos.ipc import LogLevel
+
+    fake = types.ModuleType("pifos.actions.fake_thing")
+
+    class FakeThing:  # keine Action-Unterklasse
+        pass
+
+    fake.FakeThing = FakeThing  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "pifos.actions.fake_thing", fake)
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return 0
+
+    mod = SimpleModule(conn=MagicMock(), loglevel=LogLevel.INFO)
+    with pytest.raises(ModuleError):
+        mod.resolve_action("FakeThing")
+
+
 def test_module_send_message_filters_below_loglevel() -> None:
     """send_message unterdrückt Meldungen unterhalb der eingestellten Stufe (LOG-02)."""
     from unittest.mock import MagicMock
