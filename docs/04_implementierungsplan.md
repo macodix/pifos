@@ -343,7 +343,7 @@ Beim Start eines Modules wird dem Modul die Config oder ein entsprechender Teil 
 | `terminate_module(self, handle) -> None` | beendet einen Modulprozess gestuft (CAL-02) |
 | `send_command(self, handle, name, payload=None) -> None` | sendet einen Befehl über IPC an das Modul (CAL-03, STR-04) |
 | `receive_result(self, handle) -> IpcMessage` | empfängt oder fordert Meldungen und Ergebnisse an (CAL-04, STR-03) |
-| `write_log(self, message) -> None` | schreibt eine Meldung ins Logfile (CAL-05, LOG-01) |
+| `write_log(self, message, level=LogLevel.INFO) -> None` | schreibt eine Meldung mit ihrer Logstufe ins Logfile (CAL-05, LOG-01, LOG-03) |
 
 
 
