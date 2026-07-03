@@ -375,32 +375,107 @@ def _read_if_exists(path: str, format: str) -> dict[str, object] | None:
     return read_config_data(path, format) if Path(path).exists() else None
 
 
+def _format_from_suffix(path: str) -> str | None:
+    """Leitet das Konfigurationsformat aus der Dateiendung ab.
+
+    Args:
+        path: Zu prüfender Pfad.
+
+    Returns:
+        "ini", "json" oder "toml", wenn die Endung (unabhängig von
+        Groß-/Kleinschreibung) einem bekannten Format entspricht; sonst None.
+    """
+    suffix = Path(path).suffix.lower().lstrip(".")
+    return suffix if suffix in _FORMATS else None
+
+
+def _resolve_format(explicit: str | None, path: str) -> str:
+    """Löst das Format auf: explizit angegeben, sonst aus der Dateiendung.
+
+    Args:
+        explicit: Ausdrücklich angegebenes Format oder None.
+        path: Pfad, dessen Endung als Rückfall dient.
+
+    Returns:
+        Aufgelöstes Format.
+
+    Raises:
+        ConfigError: Ohne explizites Format und ohne ableitbare Endung.
+    """
+    if explicit is not None:
+        return explicit
+    derived = _format_from_suffix(path)
+    if derived is None:
+        raise ConfigError(
+            f"Kein Format angegeben und keine ableitbare Endung: {path!r}"
+        )
+    return derived
+
+
+def _resolve_input_format(explicit: str | None, edit_path: str, fallback: str) -> str:
+    """Löst das Format der --edit-Quelle auf.
+
+    Reihenfolge: ausdrücklich angegebenes --input-format, sonst die Endung
+    der Quelle, sonst das bereits aufgelöste Zielformat.
+
+    Args:
+        explicit: Ausdrücklich angegebenes --input-format oder None.
+        edit_path: Pfad der --edit-Quelle.
+        fallback: Bereits aufgelöstes Zielformat.
+
+    Returns:
+        Aufgelöstes Format der --edit-Quelle.
+    """
+    if explicit is not None:
+        return explicit
+    return _format_from_suffix(edit_path) or fallback
+
+
 def main(args: argparse.Namespace) -> int:
     """Führt den Konfigurator nach den Kommandoargumenten aus.
+
+    Die Zieldatei (args.target) ist bei --edit optional: ohne Angabe wird die
+    --edit-Quelle an Ort und Stelle bearbeitet und nach der Sicherung ersetzt,
+    ohne dass --overwrite nötig ist. Bei --module/--free ist die Zieldatei
+    Pflicht. Das Zielformat wird, wenn nicht ausdrücklich mit --format
+    angegeben, aus der Endung der Zieldatei abgeleitet; --input-format
+    entsprechend aus der Endung der --edit-Quelle, sonst wie das Zielformat.
 
     Args:
         args: Ausgewertete Argumente (siehe bin/pifos-config).
 
     Returns:
-        Exit-Code: 0 bei Erfolg, 1 bei einem gemeldeten Fehler.
+        Exit-Code: 0 bei Erfolg, 1 bei einem gemeldeten Fehler (u. a. fehlende
+        Zieldatei außerhalb von --edit oder ein nicht auflösbares Format).
     """
     try:
-        out_format = args.format
+        if args.edit:
+            in_place = args.target is None
+            output_path = args.target or args.edit
+        else:
+            if args.target is None:
+                raise ConfigError(
+                    "Zieldatei erforderlich (nur bei --edit ohne Angabe optional)"
+                )
+            in_place = False
+            output_path = args.target
+
+        out_format = _resolve_format(args.format, output_path)
         configurator = Configurator()
         if args.free:
-            data = configurator.build_free(_read_if_exists(args.output, out_format))
+            data = configurator.build_free(_read_if_exists(output_path, out_format))
         elif args.edit:
-            in_format = args.input_format or out_format
+            in_format = _resolve_input_format(args.input_format, args.edit, out_format)
             data = configurator.edit(read_config_data(args.edit, in_format))
         else:
-            existing = _read_if_exists(args.output, out_format)
+            existing = _read_if_exists(output_path, out_format)
             modules = dict(_load_module(spec) for spec in args.module)
             data = configurator.build_for_modules(modules, existing)
         write_config_data(
             data,
             out_format,
-            args.output,
-            overwrite=args.overwrite,
+            output_path,
+            overwrite=args.overwrite or in_place,
             backup_location=args.backup_location,
         )
     except ConfigError as e:

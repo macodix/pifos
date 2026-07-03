@@ -30,16 +30,26 @@ def build_parser() -> argparse.ArgumentParser:
         "--free", action="store_true", help="beliebige Datei frei anlegen."
     )
     parser.add_argument(
-        "--format",
-        required=True,
-        choices=("ini", "json", "toml"),
-        help="Zielformat.",
+        "target",
+        nargs="?",
+        metavar="ZIELDATEI",
+        help=(
+            "Zieldatei; bei --edit optional (ohne Angabe wird die --edit-Quelle"
+            " an Ort und Stelle bearbeitet). Bei --module/--free Pflicht."
+        ),
     )
-    parser.add_argument("--output", required=True, help="Zieldatei.")
+    parser.add_argument(
+        "--format",
+        choices=("ini", "json", "toml"),
+        help="Zielformat; ohne Angabe aus der Endung der Zieldatei abgeleitet.",
+    )
     parser.add_argument(
         "--input-format",
         choices=("ini", "json", "toml"),
-        help="Format der --edit-Quelle; ohne Angabe wie --format.",
+        help=(
+            "Format der --edit-Quelle; ohne Angabe aus deren Endung,"
+            " sonst wie das Zielformat."
+        ),
     )
     parser.add_argument(
         "--overwrite",

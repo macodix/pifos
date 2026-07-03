@@ -5,21 +5,75 @@ liefert, sodass die Dialoge deterministisch ohne questionary laufen. Eine
 stumme rich.Console unterdrückt die Ausgabe.
 """
 
+import argparse
+import importlib.machinery
+import importlib.util
 import io
+import logging
 import stat
+import sys
 from pathlib import Path
 from typing import ClassVar
 
 import pytest
 from pifos.configurator import (
     Configurator,
+    _format_from_suffix,
     _load_module,
+    _resolve_format,
+    main,
     read_config_data,
     write_config_data,
 )
 from pifos.errors import ConfigError
 from pifos.module import Module
 from rich.console import Console
+
+_BIN_PATH = Path(__file__).resolve().parents[2] / "bin" / "pifos-config"
+
+
+def _load_bin_module() -> object:
+    """Lädt bin/pifos-config als Modul (endungslos, daher mit explizitem Loader).
+
+    Unterdrückt das Schreiben von .pyc-Bytecode: dieser würde als
+    bin/__pycache__ entstehen und wildcard bin/* (ruff/mypy in make check)
+    stören.
+    """
+    loader = importlib.machinery.SourceFileLoader("pifos_config_bin", str(_BIN_PATH))
+    spec = importlib.util.spec_from_file_location(
+        "pifos_config_bin", _BIN_PATH, loader=loader
+    )
+    assert spec is not None
+    module = importlib.util.module_from_spec(spec)
+    original_dont_write_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = original_dont_write_bytecode
+    return module
+
+
+class _StubConfigurator:
+    """Ersetzt Configurator in main()-Tests; keine echten Dialoge nötig."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def edit(self, data: dict[str, object]) -> dict[str, object]:
+        return data
+
+    def build_free(
+        self, existing: dict[str, object] | None = None
+    ) -> dict[str, object]:
+        return existing or {}
+
+    def build_for_modules(
+        self,
+        modules: object,
+        existing: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        return existing or {}
 
 
 class ScriptedPrompter:
@@ -243,3 +297,165 @@ def test_load_module_import_error_raises() -> None:
     """Ein Modul, dessen Import scheitert, löst ConfigError aus."""
     with pytest.raises(ConfigError, match="nicht ladbar"):
         _load_module("pifos.nonexistent_module_xyz:Something")
+
+
+# --- Formatableitung aus der Dateiendung ---
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [("datei.ini", "ini"), ("datei.JSON", "json"), ("datei.Toml", "toml")],
+)
+def test_format_from_suffix_recognizes_all_three_case_insensitive(
+    path: str, expected: str
+) -> None:
+    """Alle drei Endungen werden unabhängig von Groß-/Kleinschreibung erkannt."""
+    assert _format_from_suffix(path) == expected
+
+
+def test_format_from_suffix_unknown_extension_returns_none() -> None:
+    """Eine unbekannte Endung liefert None."""
+    assert _format_from_suffix("datei.xml") is None
+
+
+def test_resolve_format_without_explicit_and_unknown_extension_raises() -> None:
+    """Kein --format und keine ableitbare Endung erzeugen ConfigError."""
+    with pytest.raises(ConfigError, match="Kein Format angegeben"):
+        _resolve_format(None, "datei.xml")
+
+
+def test_resolve_format_explicit_overrides_extension() -> None:
+    """--format übersteuert eine abweichende Endung."""
+    assert _resolve_format("json", "datei.ini") == "json"
+
+
+# --- bin/pifos-config: Zieldatei positionsgebunden ---
+
+
+def test_bin_pifos_config_target_is_positional_argument() -> None:
+    """Die Zieldatei wird ohne --output, als positionsgebundenes Argument, gelesen."""
+    parser = _load_bin_module().build_parser()  # type: ignore[attr-defined]
+
+    args = parser.parse_args(["--edit", "quelle.ini", "ziel.ini"])
+
+    assert args.target == "ziel.ini"
+    assert args.edit == "quelle.ini"
+    assert not hasattr(args, "output")
+
+
+def test_bin_pifos_config_target_optional_with_edit() -> None:
+    """Bei --edit bleibt target ohne Angabe None."""
+    parser = _load_bin_module().build_parser()  # type: ignore[attr-defined]
+
+    args = parser.parse_args(["--edit", "quelle.ini"])
+
+    assert args.target is None
+
+
+def test_bin_pifos_config_format_is_optional() -> None:
+    """--format ist nicht mehr Pflicht (Ableitung aus der Endung möglich)."""
+    parser = _load_bin_module().build_parser()  # type: ignore[attr-defined]
+
+    args = parser.parse_args(["--edit", "quelle.ini"])
+
+    assert args.format is None
+
+
+# --- main(): Zieldatei-Auflösung ---
+
+
+def test_main_edit_without_target_edits_in_place_with_backup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """--edit ohne Ziel bearbeitet an Ort und Stelle; Sicherung ohne --overwrite."""
+    path = tmp_path / "quelle.ini"
+    write_config_data({"section": {"key": "alt"}}, "ini", str(path))
+    monkeypatch.setattr("pifos.configurator.Configurator", _StubConfigurator)
+
+    args = argparse.Namespace(
+        module=None,
+        edit=str(path),
+        free=False,
+        target=None,
+        format=None,
+        input_format=None,
+        overwrite=False,
+        backup_location=None,
+    )
+
+    result = main(args)
+
+    assert result == 0
+    backups = list(tmp_path.glob("quelle.ini.bak-*"))
+    assert len(backups) == 1
+    assert read_config_data(str(path), "ini") == {"section": {"key": "alt"}}
+
+
+def test_main_edit_with_different_target_needs_overwrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ein abweichendes Ziel unterliegt weiter der bisherigen overwrite-Regel."""
+    source = tmp_path / "quelle.ini"
+    write_config_data({"section": {"key": "alt"}}, "ini", str(source))
+    target = tmp_path / "ziel.ini"
+    write_config_data({"section": {"key": "andere_datei"}}, "ini", str(target))
+    monkeypatch.setattr("pifos.configurator.Configurator", _StubConfigurator)
+
+    args = argparse.Namespace(
+        module=None,
+        edit=str(source),
+        free=False,
+        target=str(target),
+        format=None,
+        input_format=None,
+        overwrite=False,
+        backup_location=None,
+    )
+
+    result = main(args)
+
+    assert result == 1
+
+
+def test_main_module_without_target_reports_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """--module ohne Zieldatei erzeugt eine Fehlermeldung und Exit-Code 1."""
+    args = argparse.Namespace(
+        module=["tests.integration.copy_file_module:CopyFileModule"],
+        edit=None,
+        free=False,
+        target=None,
+        format="json",
+        input_format=None,
+        overwrite=False,
+        backup_location=None,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="pifos.configurator"):
+        result = main(args)
+
+    assert result == 1
+    assert "Zieldatei erforderlich" in caplog.text
+
+
+def test_main_free_without_target_reports_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """--free ohne Zieldatei erzeugt eine Fehlermeldung und Exit-Code 1."""
+    args = argparse.Namespace(
+        module=None,
+        edit=None,
+        free=True,
+        target=None,
+        format="json",
+        input_format=None,
+        overwrite=False,
+        backup_location=None,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="pifos.configurator"):
+        result = main(args)
+
+    assert result == 1
+    assert "Zieldatei erforderlich" in caplog.text
