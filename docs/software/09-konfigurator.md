@@ -34,17 +34,38 @@ Modulfunktionen `read_config_data` und `write_config_data` lesen über
 
 `bin/pifos-config` bietet drei sich ausschließende Betriebsarten: `--module`
 (Erstellen aus Moduldeklarationen, mehrfach für eine Sammeldatei), `--edit`
-(Bearbeiten) und `--free` (freies Erstellen). `--format` und `--output` sind
-Pflicht; `--overwrite` und `--backup-location` steuern das Überschreiben und die
+(Bearbeiten) und `--free` (freies Erstellen). Die Zieldatei (`ZIELDATEI`) ist
+ein positionsgebundenes Argument; bei `--edit` ist sie optional — ohne Angabe
+wird die `--edit`-Quelle an Ort und Stelle bearbeitet. Bei `--module` und
+`--free` ist sie Pflicht.
+
+`--format` ist optional: ohne Angabe wird das Format aus der Endung der
+Zieldatei abgeleitet (`.ini`, `.json`, `.toml`, Groß-/Kleinschreibung egal);
+ohne `--format` und ohne ableitbare Endung entsteht ein Fehler. `--format`
+übersteuert eine abweichende Endung. `--input-format` löst das Format der
+`--edit`-Quelle entsprechend auf: zuerst deren Endung, sonst das Zielformat.
+`--overwrite` und `--backup-location` steuern das Überschreiben und die
 Sicherung.
+
+Kurzbeispiele:
+
+```sh
+pifos-config --edit probe.ini
+pifos-config --edit alt_bestand.json neuer_bestand.json
+pifos-config --module paket.modul:MeinModul einstellungen.toml
+```
 
 ## 9.4. Sicheres Schreiben
 
 Eine bestehende Zieldatei wird ohne `--overwrite` nicht überschrieben (safe-mode).
-Vor dem Überschreiben entsteht eine Sicherung nach dem Muster der
-dateiverändernden Aktionen (siehe [→ Aktionen](02-aktionen.md), Abschnitt
-„Gemeinsames Schutzverhalten der dateiverändernden Aktionen"). Der neue Inhalt
-wird zuerst vollständig in eine Hilfsdatei geschrieben und dann in einem Schritt
-(`os.replace`) an die Stelle der Zieldatei gesetzt; die Zieldatei erhält die
-Rechte `0600`. Eingaben werden als Freitext ohne Maskierung erfasst; Fehler
-erscheinen als generische Meldung ohne internen Pfad.
+Eine Ausnahme gilt für das Bearbeiten an Ort und Stelle (`--edit` ohne
+Zieldatei): dort sind Ziel und Quelle dieselbe Datei, und der Konfigurator
+ersetzt sie nach der üblichen Sicherung, ohne dass `--overwrite` nötig ist. Bei
+abweichendem Ziel gelten die bisherigen Regeln. Vor dem Überschreiben entsteht
+eine Sicherung nach dem Muster der dateiverändernden Aktionen (siehe [→
+Aktionen](02-aktionen.md), Abschnitt „Gemeinsames Schutzverhalten der
+dateiverändernden Aktionen"). Der neue Inhalt wird zuerst vollständig in eine
+Hilfsdatei geschrieben und dann in einem Schritt (`os.replace`) an die Stelle
+der Zieldatei gesetzt; die Zieldatei erhält die Rechte `0600`. Eingaben werden
+als Freitext ohne Maskierung erfasst; Fehler erscheinen als generische Meldung
+ohne internen Pfad.
