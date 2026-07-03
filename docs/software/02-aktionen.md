@@ -83,3 +83,9 @@ Entpackt wird ausschließlich mit dem tarfile-Extraktionsfilter `data`: Pfadausb
 `AptAction` (in `actions/apt_action.py`) installiert (`state="present"`, Voreinstellung) oder entfernt (`state="absent"`) die Debian-/Ubuntu-Pakete der Liste `packages` über `apt-get`.
 
 Der Aufruf läuft nicht-interaktiv (`DEBIAN_FRONTEND=noninteractive`), ohne Shell, mit absolutem Programmpfad, festem `PATH` und Zeitgrenze (`timeout`, Voreinstellung 300 s); intern nutzt die Aktion `SysCmdAction`, deren `stdout`, `stderr` und `returncode` auch im Fehlerfall bereitstehen. Der Kommandoaufbau trennt Optionen und Paketliste durch `--`; Paketnamen mit führendem `-` weist die Aktion mit `ActionError` ab. Das schützt den Kommandoaufbau vor Optionsinjektion und ersetzt nicht die inhaltliche Parameterprüfung durch das aufrufende Modul.
+
+## 2.13. SystemdServiceAction
+
+`SystemdServiceAction` (in `actions/systemd_service_action.py`) steuert systemd-Einheiten über `systemctl`. Je Ausführung gilt genau eine `operation` aus der Positivliste `enable`, `disable`, `start`, `stop`, `restart`, `reload`, `daemon-reload`; eine unbekannte Operation führt zur `ActionError`. Der Einheitenname `unit` ist Pflicht — außer bei `daemon-reload`, wo er nicht erlaubt ist.
+
+Der Kommandoaufbau folgt dem Muster der `AptAction`: `systemctl --no-pager <operation> -- <unit>`, ohne Shell, mit absolutem Programmpfad, festem `PATH`, abgeschaltetem Pager (zusätzlich `SYSTEMD_PAGER` leer) und Zeitgrenze (`timeout`, Voreinstellung 60 s); intern `SysCmdAction` mit verfügbarem `stdout`, `stderr` und `returncode` auch im Fehlerfall. Einheitennamen mit führendem `-` weist die Aktion mit `ActionError` ab — Schutz vor Optionsinjektion, keine inhaltliche Parameterprüfung (die liegt beim aufrufenden Modul).

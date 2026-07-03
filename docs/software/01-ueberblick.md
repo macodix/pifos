@@ -5,7 +5,7 @@
 | Modul in `pifos/` | Inhalt |
 |---|---|
 | `action.py` | abstrakte Basisklasse `Action` |
-| `actions/` (Unterpaket) | konkrete Aktionen: Systembefehl (`SysCmdAction`), Dateioperationen (`CopyFileAction`, `WriteFileAction`, `MoveFileAction`, `LineInFileAction`, `BlockInFileAction`, `ReplaceInFileAction`), Archive (`TarAction`, `UntarAction`), Paketverwaltung (`AptAction`); gemeinsames Hilfsmodul `_file_ops.py` |
+| `actions/` (Unterpaket) | konkrete Aktionen: Systembefehl (`SysCmdAction`), Dateioperationen (`CopyFileAction`, `WriteFileAction`, `MoveFileAction`, `LineInFileAction`, `BlockInFileAction`, `ReplaceInFileAction`), Archive (`TarAction`, `UntarAction`), Paketverwaltung (`AptAction`), Dienststeuerung (`SystemdServiceAction`); gemeinsames Hilfsmodul `_file_ops.py` |
 | `module.py` | abstrakte Basisklasse `Module` |
 | `config/` (Unterpaket) | `Config`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
 | `caller.py` | Basisklasse `PifosCaller`, Handle-Klasse `ModuleHandle` |
