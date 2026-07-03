@@ -24,3 +24,4 @@
 | 0.03 | 2026-07-02 | macodix | Kap. 3: resolve_action an die Code-Korrektur angepasst — Modulname aus dem Klassennamen in snake_case, Zweck (Aktionswahl über Namen aus der Konfiguration) ergänzt. |
 | 0.04 | 2026-07-02 | macodix | Kap. 3: Abschnitt 3.2 „Aktion über die Konfiguration wählen" mit Muster (resolve_action → Instanz mit Config-Parametern → run_action) ergänzt. |
 | 0.05 | 2026-07-02 | macodix | Kap. 2: acht neue Aktionen dokumentiert (WriteFile, Move, LineInFile, BlockInFile, ReplaceInFile, Tar, Untar, Apt); gemeinsames Schutzverhalten der dateiverändernden Aktionen als Abschnitt 2.2 herausgezogen und den CopyFileAction-Abschnitt darauf gestrafft; Überblickstabelle (Kap. 1) und Fehlerbehandlung (Kap. 8) angepasst. |
+| 0.06 | 2026-07-03 | macodix | Kap. 2, Abschnitt 2.2: Sicherungsname mit Zeitstempel (`.bak-<JJJJ-MM-TT-HHMMSS>`, numerischer Zusatz bei Sekundenkollision) statt festem `.bak`. |
