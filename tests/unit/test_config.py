@@ -86,6 +86,18 @@ def test_config_check_pattern_unknown_raises() -> None:
         cfg.check_pattern("unknown_pattern", "val")
 
 
+def test_config_to_dict_returns_copy() -> None:
+    """to_dict liefert den geladenen Inhalt und eine Kopie."""
+    cfg = Config()
+    cfg.load_dict({"section": {"key": "value"}})
+
+    result = cfg.to_dict()
+
+    assert result == {"section": {"key": "value"}}
+    result["section"] = {"key": "geändert"}
+    assert cfg.get_value("section") == {"key": "value"}
+
+
 # --- IniConfig ---
 
 
@@ -114,6 +126,16 @@ def test_ini_config_missing_file_raises() -> None:
     """IniConfig wirft ConfigError für nicht vorhandene Datei."""
     with pytest.raises(ConfigError):
         IniConfig("/nonexistent/path/test.ini")
+
+
+def test_ini_config_invalid_syntax_raises_configerror(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    """Fehlerhafte INI-Syntax löst ConfigError statt configparser.Error aus."""
+    ini_file = tmp_path / "ungueltig.ini"  # type: ignore[operator]
+    ini_file.write_text("kein_abschnitt_davor = wert\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="INI-Datei ungültig"):
+        IniConfig(str(ini_file))
 
 
 def test_ini_config_write_and_read(tmp_path: pytest.TempPathFactory) -> None:

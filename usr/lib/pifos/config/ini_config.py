@@ -40,6 +40,8 @@ class IniConfig:
             self._parser.read_string(self._raw)
         except OSError as e:
             raise ConfigError(f"INI-Datei nicht lesbar: {path!r}: {e}") from e
+        except configparser.Error as e:
+            raise ConfigError(f"INI-Datei ungültig: {path!r}: {e}") from e
 
     def to_dict(self) -> dict[str, object]:
         """Gibt die Konfiguration als dict zurück.

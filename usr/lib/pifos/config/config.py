@@ -178,6 +178,17 @@ class Config:
             return bool(self._PATTERN_EMAIL.match(value))
         raise ConfigError(f"Unbekanntes Prüfmuster: {pattern!r}")
 
+    def to_dict(self) -> dict[str, object]:
+        """Gibt den gesamten Konfigurationsinhalt als dict zurück.
+
+        Liefert eine flache Kopie der internen Konfiguration, damit ein
+        Aufrufer sie lesen kann, ohne den internen Zustand zu verändern.
+
+        Returns:
+            Konfiguration als dict.
+        """
+        return dict(self._data)
+
     def write_config(self, format: str, path: str) -> None:
         """Schreibt die aktuelle Konfiguration in eine Datei.
 
