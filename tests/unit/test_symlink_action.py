@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 import pytest
-from pifos.actions.symlink_action import SymlinkAction
+from pifos.actions.symlink_action import SymlinkAction, _create_symlink_atomic
 from pifos.errors import ActionError
 
 
@@ -127,6 +127,33 @@ def test_symlink_action_existing_directory_with_overwrite_raises(
     assert action.status == "failed"
     assert link.is_dir()
     assert not link.is_symlink()
+
+
+def test_create_symlink_atomic_recheck_aborts_if_no_longer_symlink(
+    tmp_path: Path,
+) -> None:
+    """Der Recheck bricht ab, wenn link_name zwischenzeitlich kein Symlink mehr ist."""
+    (tmp_path / "link.txt").write_text("wurde inzwischen echte datei", encoding="utf-8")
+
+    with pytest.raises(ActionError, match="kein Symlink mehr"):
+        _create_symlink_atomic(tmp_path, "link.txt", str(tmp_path / "ziel.txt"))
+
+    assert (tmp_path / "link.txt").read_text(encoding="utf-8") == (
+        "wurde inzwischen echte datei"
+    )
+    # keine liegen gebliebenen Temp-Symlinks
+    assert [p.name for p in tmp_path.iterdir()] == ["link.txt"]
+
+
+def test_create_symlink_atomic_recheck_aborts_if_target_removed(
+    tmp_path: Path,
+) -> None:
+    """Der Recheck bricht ab, wenn link_name zwischenzeitlich ganz fehlt."""
+    with pytest.raises(ActionError, match="nicht mehr vorhanden"):
+        _create_symlink_atomic(tmp_path, "link.txt", str(tmp_path / "ziel.txt"))
+
+    # keine liegen gebliebenen Temp-Symlinks
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_symlink_action_params() -> None:
