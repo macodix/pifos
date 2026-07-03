@@ -56,7 +56,7 @@ def test_replace_in_file_action_no_match_no_change(tmp_path: Path) -> None:
 
     assert result == "finished"
     assert path.read_text(encoding="utf-8") == "eins\nzwei\n"
-    assert not (tmp_path / "config.txt.bak").exists()
+    assert list(tmp_path.glob("config.txt.bak-*")) == []
 
 
 def test_replace_in_file_action_missing_file_raises(tmp_path: Path) -> None:
@@ -77,9 +77,9 @@ def test_replace_in_file_action_safe_mode_backup_on_change(tmp_path: Path) -> No
     action = ReplaceInFileAction(str(path), r"alter", "neuer", safe_mode=True)
     action.run()
 
-    backup_path = tmp_path / "config.txt.bak"
-    assert backup_path.exists()
-    assert backup_path.read_text(encoding="utf-8") == "alter Inhalt\n"
+    backups = list(tmp_path.glob("config.txt.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "alter Inhalt\n"
 
 
 def test_replace_in_file_action_preserves_permissions(tmp_path: Path) -> None:

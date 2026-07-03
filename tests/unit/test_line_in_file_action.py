@@ -43,7 +43,7 @@ def test_line_in_file_action_present_exact_match_no_change(tmp_path: Path) -> No
 
     assert result == "finished"
     assert path.read_text(encoding="utf-8") == "eins\nzwei\n"
-    assert not (tmp_path / "config.txt.bak").exists()
+    assert list(tmp_path.glob("config.txt.bak-*")) == []
 
 
 def test_line_in_file_action_present_with_match_replaces_line(tmp_path: Path) -> None:
@@ -87,7 +87,7 @@ def test_line_in_file_action_absent_no_match_no_change(tmp_path: Path) -> None:
 
     assert result == "finished"
     assert path.read_text(encoding="utf-8") == "eins\nzwei\n"
-    assert not (tmp_path / "config.txt.bak").exists()
+    assert list(tmp_path.glob("config.txt.bak-*")) == []
 
 
 def test_line_in_file_action_missing_file_raises(tmp_path: Path) -> None:
@@ -108,9 +108,9 @@ def test_line_in_file_action_safe_mode_backup_on_change(tmp_path: Path) -> None:
     action = LineInFileAction(str(path), "zwei", safe_mode=True)
     action.run()
 
-    backup_path = tmp_path / "config.txt.bak"
-    assert backup_path.exists()
-    assert backup_path.read_text(encoding="utf-8") == "eins\n"
+    backups = list(tmp_path.glob("config.txt.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "eins\n"
 
 
 def test_line_in_file_action_preserves_permissions(tmp_path: Path) -> None:

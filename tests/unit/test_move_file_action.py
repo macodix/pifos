@@ -74,9 +74,9 @@ def test_move_file_action_safe_mode_backup(tmp_path: Path) -> None:
     assert result == "finished"
     assert not src.exists()
     assert dst.read_text(encoding="utf-8") == "neuer Inhalt"
-    backup_path = backup_dir / "ziel.txt.bak"
-    assert backup_path.exists()
-    assert backup_path.read_text(encoding="utf-8") == "originaler Inhalt"
+    backups = list(backup_dir.glob("ziel.txt.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "originaler Inhalt"
 
 
 def test_move_file_action_source_not_found(tmp_path: Path) -> None:

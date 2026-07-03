@@ -10,10 +10,13 @@ import os
 import stat
 import tempfile
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import IO, TextIO
 
 from pifos.errors import ActionError
+
+_MAX_BACKUP_ATTEMPTS = 100
 
 
 def fd_copy(src_fd: int, dst_fd: int) -> None:
@@ -119,12 +122,71 @@ def atomic_write(
         raise
 
 
+def _create_backup_file(
+    backup_dir: Path, dst_name: str, timestamp: str, mode: int, src_fd: int
+) -> tuple[Path, int]:
+    """Legt die Sicherungsdatei exklusiv an, mit Zeitstempel im Namen.
+
+    Der Name ist "<dst_name>.bak-<timestamp>". Kollidiert er (O_EXCL
+    meldet EEXIST — z. B. zwei Sicherungen derselben Datei innerhalb
+    derselben Sekunde), wird ein numerischer Zusatz "-1", "-2", ...
+    angehängt, bis zu _MAX_BACKUP_ATTEMPTS Versuchen. O_EXCL bleibt dabei
+    die einzige Existenzprüfung; es erfolgt keine vorherige exists()-
+    Prüfung (TOCTOU, SIC-15).
+
+    Args:
+        backup_dir: Zielverzeichnis der Sicherung.
+        dst_name: Name der zu sichernden Datei.
+        timestamp: Zeitstempel im Format YYYY-MM-DD-HHMMSS.
+        mode: Rechte der Sicherungsdatei (Original-Rechte, SIC-13).
+        src_fd: Offener Deskriptor der Originaldatei; wird bei Fehler
+            geschlossen.
+
+    Returns:
+        Pfad und offener Schreib-Deskriptor der angelegten Sicherungsdatei.
+
+    Raises:
+        ActionError: Bei Anlegefehler oder wenn die Sicherungsdatei nach
+            allen Versuchen nicht angelegt werden kann (Namenskollisionen).
+    """
+    for attempt in range(_MAX_BACKUP_ATTEMPTS):
+        suffix = "" if attempt == 0 else f"-{attempt}"
+        backup_path = backup_dir / f"{dst_name}.bak-{timestamp}{suffix}"
+        try:
+            bak_fd = os.open(
+                str(backup_path),
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                mode,
+            )
+        except FileExistsError:
+            continue
+        except OSError as exc:
+            with contextlib.suppress(OSError):
+                os.close(src_fd)
+            raise ActionError(
+                f"Sicherungsdatei kann nicht angelegt werden"
+                f" {str(backup_path)!r}: {exc}"
+            ) from exc
+        return backup_path, bak_fd
+
+    with contextlib.suppress(OSError):
+        os.close(src_fd)
+    raise ActionError(
+        f"Sicherungsdatei konnte nach {_MAX_BACKUP_ATTEMPTS} Versuchen nicht"
+        f" angelegt werden (Namenskollisionen): {dst_name!r}"
+    )
+
+
 def backup_destination(dst_path: Path, backup_location: str | None) -> None:
     """Sichert dst_path vor dem Überschreiben.
 
     Öffnet die Zieldatei mit O_NOFOLLOW (SIC-15), legt die Sicherung
     exklusiv mit denselben Rechten an (SIC-13) und schreibt den Inhalt
     per Dateideskriptor (SIC-15). Der Sicherungsort wird geprüft (SIC-14).
+    Der Sicherungsname trägt einen Zeitstempel (lokale Zeit)
+    "<name>.bak-<YYYY-MM-DD-HHMMSS>", bei Kollision innerhalb derselben
+    Sekunde mit numerischem Zusatz ("-1", "-2", ...), siehe
+    _create_backup_file.
 
     Args:
         dst_path: Zu sichernde Zieldatei.
@@ -133,7 +195,8 @@ def backup_destination(dst_path: Path, backup_location: str | None) -> None:
 
     Raises:
         ActionError: Bei ungültigem Sicherungsort, Rechteproblem,
-            Symlink-Erkennung oder Schreibfehler.
+            Symlink-Erkennung, Namenskollision nach allen Versuchen oder
+            Schreibfehler.
     """
     # Sicherungsort prüfen (SIC-14)
     if backup_location is not None:
@@ -144,8 +207,6 @@ def backup_destination(dst_path: Path, backup_location: str | None) -> None:
             )
     else:
         backup_dir = dst_path.resolve().parent
-
-    backup_path = backup_dir / (dst_path.name + ".bak")
 
     # Rechte der Originaldatei (SIC-13: nicht ausweiten)
     try:
@@ -160,20 +221,10 @@ def backup_destination(dst_path: Path, backup_location: str | None) -> None:
     except OSError as exc:
         raise ActionError(f"Zieldatei für Sicherung nicht lesbar: {exc}") from exc
 
-    # Sicherungsdatei exklusiv anlegen: O_EXCL (atomar, SIC-15),
-    # O_NOFOLLOW (SIC-15), gleiche Rechte wie Original (SIC-13)
-    try:
-        bak_fd = os.open(
-            str(backup_path),
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-            orig_mode,
-        )
-    except OSError as exc:
-        with contextlib.suppress(OSError):
-            os.close(src_fd)
-        raise ActionError(
-            f"Sicherungsdatei kann nicht angelegt werden {str(backup_path)!r}: {exc}"
-        ) from exc
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    backup_path, bak_fd = _create_backup_file(
+        backup_dir, dst_path.name, timestamp, orig_mode, src_fd
+    )
 
     copy_error: OSError | None = None
     try:

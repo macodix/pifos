@@ -61,9 +61,9 @@ def test_write_file_action_safe_mode_backup(tmp_path: Path) -> None:
 
     assert result == "finished"
     assert dst.read_text(encoding="utf-8") == "neuer Inhalt"
-    backup_path = backup_dir / "ziel.txt.bak"
-    assert backup_path.exists()
-    assert backup_path.read_text(encoding="utf-8") == "originaler Inhalt"
+    backups = list(backup_dir.glob("ziel.txt.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "originaler Inhalt"
 
 
 def test_write_file_action_overwrite_preserves_permissions_without_mode(
@@ -108,7 +108,7 @@ def test_write_file_action_safe_mode_false_overwrites_without_backup(
 
     assert result == "finished"
     assert dst.read_text(encoding="utf-8") == "neu"
-    assert not (tmp_path / "ziel.txt.bak").exists()
+    assert list(tmp_path.glob("ziel.txt.bak-*")) == []
 
 
 def test_write_file_action_symlink_dst_without_explicit_mode_raises(

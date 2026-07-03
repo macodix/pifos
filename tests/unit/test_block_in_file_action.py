@@ -55,7 +55,7 @@ def test_block_in_file_action_present_existing_block_no_change(
     assert path.read_text(encoding="utf-8") == (
         "vor\n# BEGIN block\ninhalt\n# END block\nnach\n"
     )
-    assert not (tmp_path / "config.txt.bak").exists()
+    assert list(tmp_path.glob("config.txt.bak-*")) == []
 
 
 def test_block_in_file_action_present_replaces_differing_block(
@@ -181,7 +181,7 @@ def test_block_in_file_action_absent_missing_block_no_change(tmp_path: Path) -> 
 
     assert result == "finished"
     assert path.read_text(encoding="utf-8") == "vor\nnach\n"
-    assert not (tmp_path / "config.txt.bak").exists()
+    assert list(tmp_path.glob("config.txt.bak-*")) == []
 
 
 def test_block_in_file_action_custom_comment_char(tmp_path: Path) -> None:
@@ -219,9 +219,9 @@ def test_block_in_file_action_safe_mode_backup_on_change(tmp_path: Path) -> None
     action = BlockInFileAction(str(path), "inhalt", marker="block", safe_mode=True)
     action.run()
 
-    backup_path = tmp_path / "config.txt.bak"
-    assert backup_path.exists()
-    assert backup_path.read_text(encoding="utf-8") == "vor\n"
+    backups = list(tmp_path.glob("config.txt.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "vor\n"
 
 
 def test_block_in_file_action_preserves_permissions(tmp_path: Path) -> None:

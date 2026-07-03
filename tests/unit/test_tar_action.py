@@ -119,9 +119,9 @@ def test_tar_action_safe_mode_backup(tmp_path: Path) -> None:
     result = action.run()
 
     assert result == "finished"
-    backup_path = tmp_path / "archiv.tar.gz.bak"
-    assert backup_path.exists()
-    assert backup_path.read_bytes() == b"altes archiv"
+    backups = list(tmp_path.glob("archiv.tar.gz.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_bytes() == b"altes archiv"
 
 
 def test_tar_action_invalid_backup_location(tmp_path: Path) -> None:

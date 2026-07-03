@@ -56,9 +56,9 @@ def test_copy_file_action_safe_mode_backup(tmp_path: Path) -> None:
 
     assert result == "finished"
     assert dst.read_text(encoding="utf-8") == "neuer Inhalt"
-    backup_path = backup_dir / "ziel.txt.bak"
-    assert backup_path.exists()
-    assert backup_path.read_text(encoding="utf-8") == "originaler Inhalt"
+    backups = list(backup_dir.glob("ziel.txt.bak-*"))
+    assert len(backups) == 1
+    assert backups[0].read_text(encoding="utf-8") == "originaler Inhalt"
 
 
 def test_copy_file_action_backup_preserves_permissions(tmp_path: Path) -> None:
@@ -72,9 +72,35 @@ def test_copy_file_action_backup_preserves_permissions(tmp_path: Path) -> None:
     action = CopyFileAction(str(src), str(dst), safe_mode=True, overwrite=True)
     action.run()
 
-    backup_path = tmp_path / "ziel.txt.bak"
-    backup_mode = stat.S_IMODE(backup_path.stat().st_mode)
+    backups = list(tmp_path.glob("ziel.txt.bak-*"))
+    assert len(backups) == 1
+    backup_mode = stat.S_IMODE(backups[0].stat().st_mode)
     assert backup_mode == 0o600
+
+
+def test_copy_file_action_two_backups_in_a_row_both_succeed(tmp_path: Path) -> None:
+    """Zwei Sicherungen derselben Datei nacheinander funktionieren beide.
+
+    Beide Läufe fallen typischerweise in dieselbe Sekunde (gleicher
+    Zeitstempel); die zweite Sicherung muss trotzdem gelingen (Kollisions-
+    Zusatz statt Fehler).
+    """
+    src = tmp_path / "quelle.txt"
+    dst = tmp_path / "ziel.txt"
+    src.write_text("inhalt 1", encoding="utf-8")
+    dst.write_text("original", encoding="utf-8")
+
+    action1 = CopyFileAction(str(src), str(dst), safe_mode=True, overwrite=True)
+    action1.run()
+
+    src.write_text("inhalt 2", encoding="utf-8")
+    action2 = CopyFileAction(str(src), str(dst), safe_mode=True, overwrite=True)
+    action2.run()
+
+    backups = sorted(tmp_path.glob("ziel.txt.bak-*"))
+    assert len(backups) == 2
+    contents = {backup.read_text(encoding="utf-8") for backup in backups}
+    assert contents == {"original", "inhalt 1"}
 
 
 def test_copy_file_action_source_not_found(tmp_path: Path) -> None:
