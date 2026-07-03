@@ -1,7 +1,7 @@
 """Rechte- und Eigentümer-Aktion für pifos.
 
 Setzt SIC-13, SIC-15 um: kein Folgen von Symlinks bei Eigentümer- und
-Rechteänderung.
+Rechteänderung, TOCTOU-fest über einen einzigen O_NOFOLLOW-Deskriptor.
 """
 
 import grp
@@ -23,13 +23,15 @@ class PermissionsAction(Action):
     direkt eine numerische UID/GID; ein unbekannter Name erzeugt
     ActionError.
 
-    Eigentümerwechsel laufen über os.lchown, das grundsätzlich nie einem
-    Symlink folgt. Für Rechteänderungen wird os.chmod mit
-    follow_symlinks=False versucht; unterstützt die Plattform das nicht
-    (os.chmod not in os.supports_follow_symlinks — u. a. auf Linux, das
-    kein lchmod kennt), wird ein Symlink als path mit ActionError
-    abgelehnt, statt transparent durch den Symlink hindurch zu wirken
-    (SIC-15). Ist path kein Symlink, wird mode ohne Einschränkung gesetzt.
+    path wird einmalig mit O_NOFOLLOW geöffnet (SIC-15); Eigentümer- und
+    Rechteänderung laufen beide über denselben Deskriptor (os.fchown,
+    os.fchmod) statt über den Namen. Damit ist zwischen der Existenz-
+    prüfung und der eigentlichen Änderung kein Zeitfenster mehr offen, in
+    dem der Eintrag durch einen Symlink ersetzt und die Änderung so auf
+    ein anderes Ziel umgelenkt werden könnte (TOCTOU). Ist path selbst
+    ein Symlink, schlägt das Öffnen mit ELOOP fehl und die Aktion bricht
+    mit ActionError ab, ohne etwas zu ändern (fail-closed) — os.chmod/
+    os.chown würden dem Symlink sonst folgen und sein Ziel treffen.
 
     Attributes:
         PARAMS: Parameternamen der Aktion.
@@ -80,9 +82,9 @@ class PermissionsAction(Action):
         Raises:
             ActionError: Wenn weder mode noch owner noch group gesetzt
                 ist, bei fehlendem path, unbekanntem Benutzer-/Gruppen-
-                namen, bei einem Symlink als path, wenn die Plattform
-                keine Rechteänderung ohne Symlink-Folgen unterstützt,
-                oder bei sonstigem Fehler.
+                namen, wenn path (u. a. weil es ein Symlink ist) nicht
+                ohne Symlink-Folgen geöffnet werden kann, oder bei
+                sonstigem Fehler.
         """
         self.status = "running"
         try:
@@ -97,13 +99,29 @@ class PermissionsAction(Action):
                 self.status = "failed"
                 raise ActionError(f"Pfad nicht gefunden: {self.path!r}")
 
-            if self.owner is not None or self.group is not None:
-                uid = self._resolve_uid(self.owner) if self.owner is not None else -1
-                gid = self._resolve_gid(self.group) if self.group is not None else -1
-                os.lchown(str(path), uid, gid)
+            try:
+                fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW)
+            except OSError as exc:
+                self.status = "failed"
+                raise ActionError(
+                    f"Pfad kann nicht ohne Symlink-Folgen geöffnet werden"
+                    f" (path ist evtl. ein Symlink): {self.path!r}: {exc}"
+                ) from exc
 
-            if self.mode is not None:
-                self._apply_mode(path, self.mode)
+            try:
+                if self.owner is not None or self.group is not None:
+                    uid = (
+                        self._resolve_uid(self.owner) if self.owner is not None else -1
+                    )
+                    gid = (
+                        self._resolve_gid(self.group) if self.group is not None else -1
+                    )
+                    os.fchown(fd, uid, gid)
+
+                if self.mode is not None:
+                    os.fchmod(fd, self.mode)
+            finally:
+                os.close(fd)
         except ActionError:
             if self.status != "failed":
                 self.status = "failed"
@@ -152,24 +170,3 @@ class PermissionsAction(Action):
             return grp.getgrnam(group).gr_gid
         except KeyError as exc:
             raise ActionError(f"Unbekannte Gruppe: {group!r}") from exc
-
-    def _apply_mode(self, path: Path, mode: int) -> None:
-        """Setzt die Rechte von path, ohne Symlinks zu folgen (SIC-15).
-
-        Args:
-            path: Datei oder Verzeichnis.
-            mode: Zu setzende Rechte.
-
-        Raises:
-            ActionError: Wenn path ein Symlink ist und die Plattform
-                keine Rechteänderung ohne Symlink-Folgen unterstützt.
-        """
-        if path.is_symlink():
-            if os.chmod not in os.supports_follow_symlinks:
-                raise ActionError(
-                    f"Rechteänderung für Symlinks wird auf diesem System"
-                    f" nicht unterstützt: {self.path!r}"
-                )
-            os.chmod(str(path), mode, follow_symlinks=False)
-        else:
-            os.chmod(str(path), mode)
