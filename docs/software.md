@@ -2,7 +2,7 @@
 
 *pifos* ist ein Bausatz zum Bau von Aufrufern, die Aufgaben in gekapselten Modulprozessen ausführen. Diese Dokumentation beschreibt den umgesetzten Stand des Codes unter `usr/lib/pifos/` — sie spiegelt wider, was tatsächlich vorhanden ist, und wird mit dem Code fortgeschrieben. Die frühere Planungsreihe (Konzept, Anforderungen, Machbarkeit, Implementierungsplan) liegt unter `docs/archiv/`.
 
-**Status:** [in Bearbeitung] · **Stand:** 2026-07-02
+**Status:** [in Bearbeitung] · **Stand:** 2026-07-03
 
 ## Inhaltsverzeichnis
 
@@ -26,3 +26,4 @@
 | 0.05 | 2026-07-02 | macodix | Kap. 2: acht neue Aktionen dokumentiert (WriteFile, Move, LineInFile, BlockInFile, ReplaceInFile, Tar, Untar, Apt); gemeinsames Schutzverhalten der dateiverändernden Aktionen als Abschnitt 2.2 herausgezogen und den CopyFileAction-Abschnitt darauf gestrafft; Überblickstabelle (Kap. 1) und Fehlerbehandlung (Kap. 8) angepasst. |
 | 0.06 | 2026-07-03 | macodix | Kap. 2, Abschnitt 2.2: Sicherungsname mit Zeitstempel (`.bak-<JJJJ-MM-TT-HHMMSS>`, numerischer Zusatz bei Sekundenkollision) statt festem `.bak`. |
 | 0.07 | 2026-07-03 | macodix | Kap. 2: Abschnitt 2.13 SystemdServiceAction ergänzt; Überblickstabelle (Kap. 1) um Dienststeuerung erweitert. |
+| 0.08 | 2026-07-03 | macodix | Kap. 2: vier neue Aktionen dokumentiert (DeleteFile, MakeDir, Permissions, Symlink), Abschnitte thematisch neu nummeriert (2.7–2.17); safe-mode-Beschreibung in 2.2 um Löschen ergänzt; Überblickstabelle (Kap. 1) erweitert. |

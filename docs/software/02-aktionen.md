@@ -10,9 +10,9 @@ Konkrete Aktionen implementieren die abstrakte Methode `run() -> str`. Sie setzt
 
 ## 2.2. Gemeinsames Schutzverhalten der dateiverändernden Aktionen
 
-Alle Aktionen, die eine einzelne Zieldatei anlegen, ändern oder überschreiben, folgen demselben Muster; die Umsetzung liegt im Hilfsmodul `actions/_file_ops.py`. Einzige Ausnahme ist `UntarAction`, die viele Dateien auf einmal anlegt und eigene Schutzmechanismen hat (siehe Abschnitt 2.11, UntarAction).
+Alle Aktionen, die den Inhalt einer einzelnen Zieldatei anlegen, ändern, überschreiben oder löschen, folgen demselben Muster; die Umsetzung liegt im Hilfsmodul `actions/_file_ops.py`. Aktionen ohne Inhaltsbezug (`MakeDirAction`, `PermissionsAction`, `SymlinkAction`) sowie `UntarAction`, die viele Dateien auf einmal anlegt, haben eigene Schutzmechanismen — beschrieben im jeweiligen Abschnitt.
 
-**safe-mode** (Voreinstellung `safe_mode=True`): Aktionen, die eine bestehende Zieldatei ersetzen würden (`CopyFileAction`, `WriteFileAction`, `MoveFileAction`, `TarAction`), verweigern das ohne `overwrite=True` mit einer `ActionError`; mit `overwrite=True` sichern sie die Zieldatei vorher. Aktionen, die den Inhalt einer bestehenden Datei ändern (`LineInFileAction`, `BlockInFileAction`, `ReplaceInFileAction`), sichern die Datei vor der ersten tatsächlichen Änderung; ist keine Änderung nötig, entsteht auch keine Sicherung.
+**safe-mode** (Voreinstellung `safe_mode=True`): Aktionen, die eine bestehende Zieldatei ersetzen würden (`CopyFileAction`, `WriteFileAction`, `MoveFileAction`, `TarAction`), verweigern das ohne `overwrite=True` mit einer `ActionError`; mit `overwrite=True` sichern sie die Zieldatei vorher. Aktionen, die den Inhalt einer bestehenden Datei ändern (`LineInFileAction`, `BlockInFileAction`, `ReplaceInFileAction`), sichern die Datei vor der ersten tatsächlichen Änderung; ist keine Änderung nötig, entsteht auch keine Sicherung. `DeleteFileAction` sichert die Datei vor dem Löschen; hier schaltet `safe_mode=False` den Schutz vollständig ab, ein `overwrite`-Flag gibt es nicht.
 
 **Sicherung:** Die Sicherungsdatei heißt `<name>.bak-<JJJJ-MM-TT-HHMMSS>` (Zeitstempel in lokaler Zeit) und liegt im Verzeichnis der Zieldatei oder unter dem einstellbaren `backup_location`. Sie wird exklusiv angelegt (`O_EXCL`, `O_NOFOLLOW`) und übernimmt die Rechte des Originals, ohne sie auszuweiten. Fällt eine weitere Sicherung derselben Datei in dieselbe Sekunde, erhält der Name einen numerischen Zusatz (`-1`, `-2`, …); erst wenn auch das wiederholt scheitert, entsteht eine `ActionError`.
 
@@ -46,7 +46,13 @@ Die Dateirechte bestimmt der Parameter `mode`: Ein ausdrücklich übergebener We
 
 Innerhalb desselben Dateisystems geschieht das Verschieben atomar per `os.replace`; die Rechte bleiben dabei unverändert erhalten. Über Dateisystemgrenzen hinweg wird die Datei über eine Temp-Datei kopiert (Rechte der Quelle übernommen) und die Quelle anschließend entfernt. Eine bestehende Zieldatei unterliegt dem safe-mode nach Abschnitt 2.2, Gemeinsames Schutzverhalten.
 
-## 2.7. LineInFileAction
+## 2.7. DeleteFileAction
+
+`DeleteFileAction` (in `actions/delete_file_action.py`) löscht die Datei `path`. Eine fehlende Datei führt zur `ActionError`; ein defekter Symlink (Ziel fehlt) gilt als vorhanden und ist löschbar.
+
+Bei `safe_mode=True` (Voreinstellung) wird die Datei vor dem Löschen gesichert (Zeitstempel-Muster und `backup_location` nach Abschnitt 2.2, Gemeinsames Schutzverhalten); `safe_mode=False` löscht ohne Sicherung. Ein Symlink als `path` wird mit safe-mode abgelehnt (die Sicherung liest nicht durch Symlinks); ohne safe-mode entfernt die Aktion nur den Link selbst, nie dessen Ziel.
+
+## 2.8. LineInFileAction
 
 `LineInFileAction` (in `actions/line_in_file_action.py`) stellt sicher, dass eine Zeile in einer Textdatei vorhanden ist oder fehlt. Die Datei muss existieren, sonst entsteht eine `ActionError`.
 
@@ -54,37 +60,55 @@ Bei `state="present"` (Voreinstellung) wird die Sollzeile `line` gesetzt: Trifft
 
 Gesichert wird nur bei tatsächlicher Änderung; Schreiben atomar, die Dateirechte bleiben erhalten (Abschnitt 2.2, Gemeinsames Schutzverhalten).
 
-## 2.8. BlockInFileAction
+## 2.9. BlockInFileAction
 
 `BlockInFileAction` (in `actions/block_in_file_action.py`) pflegt einen markierten, mehrzeiligen Textblock in einer Textdatei. Der Block (`block`, Inhalt ohne Marker) wird von zwei Markerzeilen der Form `<comment_char> BEGIN <marker>` und `<comment_char> END <marker>` eingerahmt; das Kommentarzeichen ist über `comment_char` einstellbar (Voreinstellung `#`).
 
 Bei `state="present"` wird ein vorhandener Block ersetzt, wenn sein Inhalt abweicht; fehlt er, wird er mit einer Leerzeile als Trenner am Dateiende angefügt. Bei `state="absent"` entfernt die Aktion den Block samt Markerzeilen und einer unmittelbar davor stehenden Leerzeile — ein Anlege-Entferne-Zyklus stellt den Ausgangsinhalt exakt wieder her. Ist nur eine der beiden Markerzeilen vorhanden (inkonsistenter Zustand), gilt der Block als nicht vorhanden. Existenzpflicht der Datei, Sicherung und atomares Schreiben wie bei `LineInFileAction`.
 
-## 2.9. ReplaceInFileAction
+## 2.10. ReplaceInFileAction
 
 `ReplaceInFileAction` (in `actions/replace_in_file_action.py`) sucht und ersetzt im Inhalt einer Textdatei per regulärem Ausdruck (`pattern`, `replacement`; Rückverweise sind möglich). `count` begrenzt die Zahl der Ersetzungen; `0` (Voreinstellung) ersetzt alle Fundstellen.
 
 Die Datei muss existieren. Ohne Fundstelle bleibt die Datei unverändert und es entsteht keine Sicherung; der Status ist dennoch `finished`. Sicherung und atomares Schreiben wie bei `LineInFileAction`. Die Datei wird vollständig in den Speicher gelesen; ein Größenlimit gibt es nicht — die Aktion ist für Konfigurationsdateien gedacht, nicht für beliebig große Dateien.
 
-## 2.10. TarAction
+## 2.11. MakeDirAction
+
+`MakeDirAction` (in `actions/make_dir_action.py`) legt das Verzeichnis `path` an. Die Rechte (`mode`, Voreinstellung restriktiv `0o700`) werden exakt und umask-unabhängig gesetzt: `mkdir` legt bereits mit `mode` an (nie weiter), eine deskriptor-basierte Korrektur (`O_NOFOLLOW`, `fchmod`) stellt die exakten Bits auch bei einschränkender umask sicher. Mit `parents=True` entstehen fehlende Elternverzeichnisse mit denselben Rechten.
+
+Existiert `path` bereits als Verzeichnis, ändert die Aktion nichts (idempotent), auch die Rechte bleiben unangetastet. Existiert dort eine Datei oder ein Symlink — auch ein Symlink auf ein Verzeichnis —, entsteht eine `ActionError`.
+
+## 2.12. PermissionsAction
+
+`PermissionsAction` (in `actions/permissions_action.py`) setzt Rechte und/oder Eigentümer und Gruppe einer bestehenden Datei oder eines Verzeichnisses. Von den Parametern `mode`, `owner` und `group` muss mindestens einer gesetzt sein; `owner`/`group` sind ein Name (Auflösung über die Systemdatenbank, unbekannter Name → `ActionError`) oder numerisch als Zahl.
+
+Alle Änderungen laufen über einen einzigen `O_NOFOLLOW`-Deskriptor (`fchmod`/`fchown`): Ein Symlink als `path` führt zur `ActionError`, und zwischen Prüfung und Änderung besteht kein Wettlauf-Fenster. Fehlender `path` oder kein gesetzter Wert → `ActionError`.
+
+## 2.13. SymlinkAction
+
+`SymlinkAction` (in `actions/symlink_action.py`) legt den Symlink `link_path` an, der auf `target` zeigt. `target` muss nicht existieren — ein toter Link ist zulässig.
+
+Existiert am `link_path` bereits ein Eintrag, entsteht ohne `overwrite=True` eine `ActionError`. Mit `overwrite=True` wird ausschließlich ein vorhandener Symlink ersetzt — atomar über einen temporären Link und `os.replace`, mit Nachprüfung unmittelbar vor dem Austausch; bleibt der Austausch stecken, wird der temporäre Link entfernt. Verzeichnisse werden nie ersetzt (das erzwingt die rename-Semantik des Betriebssystems); für reguläre Dateien ist der Schutz eine Vorprüfung mit Nachprüfung ohne absolute Garantie gegen eine zeitgleiche Ersetzung durch Dritte im letzten Moment. Eine Sicherung gibt es nicht — ein Symlink hat keinen zu sichernden Inhalt, der Rückbau gelingt über einen erneuten Aufruf mit dem alten `target`.
+
+## 2.14. TarAction
 
 `TarAction` (in `actions/tar_action.py`) packt die Pfade der Liste `sources` (Dateien oder Verzeichnisse, rekursiv) in das tar-Archiv `dst`. `compression` wählt gzip (`"gz"`, Voreinstellung) oder unkomprimiert (`None`). Fehlende Quellen führen zur `ActionError`.
 
 Das Archiv erhält restriktive Rechte (`mode`, Voreinstellung `0o600`) und wird atomar über eine Temp-Datei erstellt; bei einem Packfehler bleibt kein Temp-Rest zurück. Symlinks in den Quellen werden als Symlink-Einträge archiviert, nicht dereferenziert. Ein bestehendes Archiv unterliegt dem safe-mode nach Abschnitt 2.2, Gemeinsames Schutzverhalten.
 
-## 2.11. UntarAction
+## 2.15. UntarAction
 
 `UntarAction` (in `actions/untar_action.py`) entpackt das tar-Archiv `src` (gzip oder unkomprimiert, automatisch erkannt) in das bestehende Zielverzeichnis `dst_dir`.
 
 Entpackt wird ausschließlich mit dem tarfile-Extraktionsfilter `data`: Pfadausbruch (`../`), absolute Pfade, Symlink-Angriffe, Gerätedateien und Rechteausweitung aus dem Archiv werden abgewehrt. Vor der Extraktion prüft die Aktion Kollisionen: Trifft ein Archiv-Eintrag auf eine bestehende Datei oder einen Symlink im Ziel, entsteht ohne `overwrite=True` eine `ActionError` und nichts wird entpackt; bestehende Verzeichnisse zählen nicht als Kollision. Ebenfalls vor der Extraktion greifen zwei Grenzen gegen Dekompressionsangriffe: `max_members` (Voreinstellung 10 000 Einträge) und `max_total_size` (Voreinstellung 1 GiB, Summe der entpackten Größen). Ein safe-mode mit Sicherung einzelner Dateien besteht hier nicht.
 
-## 2.12. AptAction
+## 2.16. AptAction
 
 `AptAction` (in `actions/apt_action.py`) installiert (`state="present"`, Voreinstellung) oder entfernt (`state="absent"`) die Debian-/Ubuntu-Pakete der Liste `packages` über `apt-get`.
 
 Der Aufruf läuft nicht-interaktiv (`DEBIAN_FRONTEND=noninteractive`), ohne Shell, mit absolutem Programmpfad, festem `PATH` und Zeitgrenze (`timeout`, Voreinstellung 300 s); intern nutzt die Aktion `SysCmdAction`, deren `stdout`, `stderr` und `returncode` auch im Fehlerfall bereitstehen. Der Kommandoaufbau trennt Optionen und Paketliste durch `--`; Paketnamen mit führendem `-` weist die Aktion mit `ActionError` ab. Das schützt den Kommandoaufbau vor Optionsinjektion und ersetzt nicht die inhaltliche Parameterprüfung durch das aufrufende Modul.
 
-## 2.13. SystemdServiceAction
+## 2.17. SystemdServiceAction
 
 `SystemdServiceAction` (in `actions/systemd_service_action.py`) steuert systemd-Einheiten über `systemctl`. Je Ausführung gilt genau eine `operation` aus der Positivliste `enable`, `disable`, `start`, `stop`, `restart`, `reload`, `daemon-reload`; eine unbekannte Operation führt zur `ActionError`. Der Einheitenname `unit` ist Pflicht — außer bei `daemon-reload`, wo er nicht erlaubt ist.
 
