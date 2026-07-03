@@ -156,6 +156,27 @@ def test_create_symlink_atomic_recheck_aborts_if_target_removed(
     assert list(tmp_path.iterdir()) == []
 
 
+def test_create_symlink_atomic_cleans_up_temp_link_on_replace_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Schlägt os.replace fehl, bleibt kein temporärer Symlink zurück."""
+    old_target = tmp_path / "alt.txt"
+    old_target.write_text("alt", encoding="utf-8")
+    (tmp_path / "link.txt").symlink_to(old_target)
+
+    def fake_replace(src: str, dst: str) -> None:
+        raise OSError("simulierter Austauschfehler")
+
+    monkeypatch.setattr("pifos.actions.symlink_action.os.replace", fake_replace)
+
+    with pytest.raises(OSError, match="simulierter Austauschfehler"):
+        _create_symlink_atomic(tmp_path, "link.txt", str(tmp_path / "neu.txt"))
+
+    # kein Temp-Symlink zurückgeblieben, der ursprüngliche Symlink unverändert
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["alt.txt", "link.txt"]
+    assert os.readlink(str(tmp_path / "link.txt")) == str(old_target)
+
+
 def test_symlink_action_params() -> None:
     """PARAMS enthält die erwarteten Parameternamen."""
     assert SymlinkAction.PARAMS == ["link_path", "target", "overwrite"]

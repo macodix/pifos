@@ -31,7 +31,9 @@ def _create_symlink_atomic(link_dir: Path, link_name: str, target: str) -> None:
     schließt es aber nicht vollständig — os.replace selbst kennt kein
     „nur ersetzen, wenn Symlink" (siehe Klassen-Docstring). Kollidiert
     der temporäre Name (praktisch ausgeschlossen), wird mit neuem Namen
-    erneut versucht, bis zu _MAX_SYMLINK_ATTEMPTS Mal.
+    erneut versucht, bis zu _MAX_SYMLINK_ATTEMPTS Mal. Schlägt der Recheck
+    oder der Austausch selbst fehl, wird der bereits angelegte temporäre
+    Symlink entfernt, statt liegen zu bleiben.
 
     Args:
         link_dir: Verzeichnis, in dem der Symlink liegt/entstehen soll.
@@ -42,7 +44,8 @@ def _create_symlink_atomic(link_dir: Path, link_name: str, target: str) -> None:
         ActionError: Wenn nach allen Versuchen kein temporärer Symlink
             angelegt werden konnte, oder wenn der Recheck unmittelbar vor
             dem Austausch zeigt, dass link_name kein Symlink mehr ist.
-        OSError: Bei sonstigem Anlege- oder Austauschfehler.
+        OSError: Bei sonstigem Anlege- oder Austauschfehler; der
+            temporäre Symlink wird zuvor entfernt.
     """
     for _ in range(_MAX_SYMLINK_ATTEMPTS):
         tmp_path = link_dir / f".{link_name}.tmp-{secrets.token_hex(8)}"
@@ -69,7 +72,12 @@ def _create_symlink_atomic(link_dir: Path, link_name: str, target: str) -> None:
                 f" Austausch abgebrochen: {link_name!r}"
             )
 
-        os.replace(str(tmp_path), str(final_path))
+        try:
+            os.replace(str(tmp_path), str(final_path))
+        except OSError:
+            with contextlib.suppress(OSError):
+                tmp_path.unlink(missing_ok=True)
+            raise
         return
 
     raise ActionError(
