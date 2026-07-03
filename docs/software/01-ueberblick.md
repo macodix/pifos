@@ -8,6 +8,7 @@
 | `actions/` (Unterpaket) | konkrete Aktionen: Systembefehl (`SysCmdAction`), Dateioperationen (`CopyFileAction`, `WriteFileAction`, `MoveFileAction`, `DeleteFileAction`, `LineInFileAction`, `BlockInFileAction`, `ReplaceInFileAction`), Verzeichnisse und Metadaten (`MakeDirAction`, `PermissionsAction`, `SymlinkAction`), Archive (`TarAction`, `UntarAction`), Paketverwaltung (`AptAction`), Dienststeuerung (`SystemdServiceAction`); gemeinsames Hilfsmodul `_file_ops.py` |
 | `module.py` | abstrakte Basisklasse `Module` |
 | `config/` (Unterpaket) | `Config`, Formatklassen `IniConfig`, `JsonConfig`, `TomlConfig` |
+| `configurator.py` | Konfigurator `Configurator`, Persistenz und Kommando-`main` |
 | `caller.py` | Basisklasse `PifosCaller`, Handle-Klasse `ModuleHandle` |
 | `ipc.py` | Nachrichtenformat `IpcMessage`, Enums `MessageKind`, `LogLevel` |
 | `runner.py` | Einsprungfunktion `module_runner` des Modulprozesses |

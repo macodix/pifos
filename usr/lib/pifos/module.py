@@ -126,7 +126,7 @@ class Module(ABC):
         Der Modulname wird aus dem Klassennamen in snake_case gebildet:
         `SysCmdAction` → Modul `pifos.actions.sys_cmd_action`, aus dem die
         gleichnamige Klasse gelesen wird. Ermöglicht die Auswahl einer
-        Aktion über ihren Namen, etwa aus der Konfiguration.
+        Aktion über ihren Namen zur Laufzeit im Code.
 
         Args:
             name: Klassenname der gesuchten Aktion in CamelCase.

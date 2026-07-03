@@ -1,8 +1,8 @@
 """Gemeinsame Dateioperationen für Aktionen (SIC-13, SIC-14, SIC-15).
 
 Interne Hilfsfunktionen für atomares Schreiben, Sicherung vor dem
-Überschreiben und symlink-sicheres Lesen. Wird ausschließlich von
-Aktionsmodulen aus pifos.actions genutzt.
+Überschreiben und symlink-sicheres Lesen. Genutzt von den Aktionsmodulen aus
+pifos.actions und vom Konfigurator (configurator.py).
 """
 
 import contextlib

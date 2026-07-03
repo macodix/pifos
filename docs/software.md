@@ -14,6 +14,7 @@
 06 [Prozessmodell, Steuerung und IPC](software/06-prozessmodell-ipc.md)
 07 [Logging](software/07-logging.md)
 08 [Fehlerbehandlung und Ausnahmen](software/08-fehlerbehandlung.md)
+09 [Konfigurator](software/09-konfigurator.md)
 
 ## Versionshistorie
 
@@ -27,3 +28,4 @@
 | 0.06 | 2026-07-03 | macodix | Kap. 2, Abschnitt 2.2: Sicherungsname mit Zeitstempel (`.bak-<JJJJ-MM-TT-HHMMSS>`, numerischer Zusatz bei Sekundenkollision) statt festem `.bak`. |
 | 0.07 | 2026-07-03 | macodix | Kap. 2: Abschnitt 2.13 SystemdServiceAction ergänzt; Überblickstabelle (Kap. 1) um Dienststeuerung erweitert. |
 | 0.08 | 2026-07-03 | macodix | Kap. 2: vier neue Aktionen dokumentiert (DeleteFile, MakeDir, Permissions, Symlink), Abschnitte thematisch neu nummeriert (2.7–2.17); safe-mode-Beschreibung in 2.2 um Löschen ergänzt; Überblickstabelle (Kap. 1) erweitert. |
+| 0.09 | 2026-07-03 | macodix | Kap. 9 (Konfigurator) neu: Werkzeug zum Erzeugen, Bearbeiten und freien Anlegen von Konfigurationsdateien; Config um to_dict ergänzt; IniConfig meldet configparser-Fehler als ConfigError; _file_ops-Docstring auf den Konfigurator erweitert; Kap. 3 resolve_action-Hinweis ohne Konfigurationsbezug. |

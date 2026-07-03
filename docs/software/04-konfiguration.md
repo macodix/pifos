@@ -15,6 +15,7 @@ Die Konfiguration entkoppelt die Dateiformate von ihren Verwendern. Die zentrale
 | `get_section(name) -> dict \| list` | liefert eine Sektion als `dict` oder `list` |
 | `get_list(key, sort=False) -> list` | liefert einen Listenwert, wahlweise sortiert |
 | `check_pattern(pattern, value) -> bool` | wendet ein formales Prüfmuster auf einen Wert an |
+| `to_dict() -> dict` | liefert den gesamten Konfigurationsinhalt als flache Kopie |
 | `write_config(format, path) -> None` | schreibt die aktuelle Konfiguration in eine Datei |
 
 `check_pattern` kennt die Muster `exists`, `not_empty`, `is_number`, `is_list`, `is_comma_separated` und `is_email`; ein unbekanntes Muster führt zu `ConfigError`.
