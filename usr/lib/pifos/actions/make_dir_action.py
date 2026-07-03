@@ -22,9 +22,14 @@ class MakeDirAction(Action):
     wird ActionError erzeugt; ein Symlink wird nie transparent wie ein
     Verzeichnis behandelt.
 
-    mode wird über os.chmod nach dem Anlegen explizit gesetzt (nicht nur
-    über den mode-Parameter von os.mkdir), damit das umask der
-    Ausführungsumgebung die Rechte nicht unbemerkt einschränkt (SIC-13).
+    Rechte werden zweistufig gesetzt: os.mkdir erhält mode direkt als
+    Parameter, damit die Rechte schon beim Anlegen nie weiter als mode
+    sind (kein Zeitfenster mit 0o777-artigen Rechten); ein umask der
+    Ausführungsumgebung kann die tatsächlich gesetzten Rechte dabei aber
+    unbemerkt weiter einschränken als gewünscht. Deshalb folgt unmittelbar
+    danach ein deskriptor-basiertes os.fchmod (O_NOFOLLOW | O_DIRECTORY
+    beim Öffnen, SIC-15) auf exakt mode, das dieses umask-Ergebnis
+    korrigiert (SIC-13).
 
     Mit parents=True werden auch fehlende Elternverzeichnisse angelegt;
     im Unterschied zu Path.mkdir(parents=True, mode=...) (das mode nur
@@ -102,8 +107,8 @@ class MakeDirAction(Action):
             if self.parents:
                 self._create_with_parents(path)
             else:
-                os.mkdir(str(path))
-                os.chmod(str(path), self.mode)
+                os.mkdir(str(path), self.mode)
+                self._fchmod_exact(path)
         except ActionError:
             if self.status != "failed":
                 self.status = "failed"
@@ -134,5 +139,26 @@ class MakeDirAction(Action):
             current = parent
 
         for directory in reversed(missing):
-            os.mkdir(str(directory))
-            os.chmod(str(directory), self.mode)
+            os.mkdir(str(directory), self.mode)
+            self._fchmod_exact(directory)
+
+    def _fchmod_exact(self, path: Path) -> None:
+        """Setzt die Rechte von path per Deskriptor exakt auf mode (SIC-13, SIC-15).
+
+        Öffnet das gerade angelegte Verzeichnis mit O_NOFOLLOW | O_DIRECTORY
+        und setzt mode per os.fchmod. Das korrigiert eine mögliche
+        Einschränkung durch das umask der Ausführungsumgebung, die beim
+        os.mkdir-Aufruf mit explizitem mode wirkt (POSIX: tatsächliche
+        Rechte = mode & ~umask).
+
+        Args:
+            path: Gerade angelegtes Verzeichnis.
+
+        Raises:
+            OSError: Bei Öffnungs- oder chmod-Fehler.
+        """
+        fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY)
+        try:
+            os.fchmod(fd, self.mode)
+        finally:
+            os.close(fd)

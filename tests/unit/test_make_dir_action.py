@@ -1,5 +1,6 @@
 """Tests für pifos.actions.make_dir_action."""
 
+import os
 import stat
 from pathlib import Path
 
@@ -93,6 +94,41 @@ def test_make_dir_action_existing_symlink_raises(tmp_path: Path) -> None:
         action.run()
     assert action.status == "failed"
     assert link.is_symlink()
+
+
+def test_make_dir_action_exact_mode_despite_restrictive_umask(
+    tmp_path: Path,
+) -> None:
+    """Ein einschränkender umask engt die tatsächlichen Rechte nicht ein.
+
+    os.mkdir mit explizitem mode wäre bei umask 0o077 auf 0o700 statt
+    0o750 begrenzt worden; das nachgelagerte os.fchmod korrigiert das.
+    """
+    path = tmp_path / "neu"
+    old_umask = os.umask(0o077)
+    try:
+        action = MakeDirAction(str(path), mode=0o750)
+        action.run()
+    finally:
+        os.umask(old_umask)
+
+    assert stat.S_IMODE(path.stat().st_mode) == 0o750
+
+
+def test_make_dir_action_parents_exact_mode_despite_restrictive_umask(
+    tmp_path: Path,
+) -> None:
+    """Auch neu angelegte Elternverzeichnisse erhalten trotz umask exakt mode."""
+    path = tmp_path / "a" / "b"
+    old_umask = os.umask(0o077)
+    try:
+        action = MakeDirAction(str(path), mode=0o750, parents=True)
+        action.run()
+    finally:
+        os.umask(old_umask)
+
+    assert stat.S_IMODE(path.stat().st_mode) == 0o750
+    assert stat.S_IMODE((tmp_path / "a").stat().st_mode) == 0o750
 
 
 def test_make_dir_action_params() -> None:
