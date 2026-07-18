@@ -96,6 +96,13 @@ class Module(ABC):
     def run_action(self, action: Action) -> int:
         """Führt eine Aktion aus und übernimmt deren Status.
 
+        Bei Fehlschlag wird die Ursache als ERROR-Meldung an den Aufrufer
+        gemeldet, damit sie in der Logdatei erscheint: der Text der
+        ActionError (Returncode und stderr, soweit die Aktion sie erfasst)
+        bzw. bei nicht abgeschlossenem Status die erfassten Werte. Andernfalls
+        bliebe von einem gescheiterten Werkzeugaufruf (z. B. apt) nur der
+        Rückgabewert 1 übrig — die eigentliche Fehlermeldung ginge verloren.
+
         Args:
             action: Die auszuführende Aktion.
 
@@ -104,9 +111,40 @@ class Module(ABC):
         """
         try:
             status = action.run()
-            return 0 if status == "finished" else 1
-        except ActionError:
+        except ActionError as exc:
+            self.send_message(LogLevel.ERROR, type(action).__name__, str(exc))
             return 1
+        if status != "finished":
+            self.send_message(
+                LogLevel.ERROR,
+                type(action).__name__,
+                self._action_failure_detail(action, status),
+            )
+            return 1
+        return 0
+
+    @staticmethod
+    def _action_failure_detail(action: Action, status: str) -> str:
+        """Baut aus einer gescheiterten Aktion einen Fehlertext für das Log.
+
+        Nutzt Returncode und stderr, falls die Aktion sie führt (z. B.
+        SysCmdAction/AptAction); sonst nur den Status.
+
+        Args:
+            action: Die gescheiterte Aktion.
+            status: Von run() gelieferter Status ungleich "finished".
+
+        Returns:
+            Fehlertext mit Returncode und stderr, soweit vorhanden.
+        """
+        returncode = getattr(action, "returncode", None)
+        stderr = getattr(action, "stderr", "")
+        detail = f"Aktion nicht abgeschlossen (Status {status!r})"
+        if returncode is not None:
+            detail += f", Returncode {returncode}"
+        if stderr:
+            detail += f"; stderr: {stderr.strip()!r}"
+        return detail
 
     def control_action(self, action: Action, **options: object) -> None:
         """Steuert eine Aktion über Parameter oder Instanzvariablen.

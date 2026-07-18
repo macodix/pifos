@@ -124,6 +124,73 @@ def test_module_run_action_returns_zero_on_success() -> None:
     assert mod.start() == 0
 
 
+def test_module_run_action_reports_error_detail_on_failure() -> None:
+    """run_action meldet bei ActionError Returncode und stderr als ERROR."""
+    from unittest.mock import MagicMock
+
+    from pifos.action import Action
+    from pifos.errors import ActionError
+    from pifos.ipc import LogLevel
+
+    class FailingAction(Action):
+        returncode = 3
+        stderr = "boom"
+
+        def run(self) -> str:
+            self.status = "failed"
+            raise ActionError(
+                f"Befehl endete mit Code {self.returncode}; stderr: {self.stderr!r}"
+            )
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return self.run_action(FailingAction())
+
+    conn = MagicMock()
+    mod = SimpleModule(conn=conn, loglevel=LogLevel.INFO)
+
+    assert mod.start() == 1
+    errors = [
+        c.args[0] for c in conn.send.call_args_list if c.args[0].level == LogLevel.ERROR
+    ]
+    assert errors, "keine ERROR-Meldung gesendet"
+    text = str(errors[-1].payload)
+    assert "3" in text
+    assert "boom" in text
+
+
+def test_module_run_action_reports_detail_when_status_not_finished() -> None:
+    """run_action meldet auch ohne Ausnahme bei nicht-fertigem Status die Werte."""
+    from unittest.mock import MagicMock
+
+    from pifos.action import Action
+    from pifos.ipc import LogLevel
+
+    class NotFinishedAction(Action):
+        returncode = 7
+        stderr = "kaputt"
+
+        def run(self) -> str:
+            self.status = "failed"
+            return self.status
+
+    class SimpleModule(Module):
+        def start(self) -> int:
+            return self.run_action(NotFinishedAction())
+
+    conn = MagicMock()
+    mod = SimpleModule(conn=conn, loglevel=LogLevel.INFO)
+
+    assert mod.start() == 1
+    errors = [
+        c.args[0] for c in conn.send.call_args_list if c.args[0].level == LogLevel.ERROR
+    ]
+    assert errors, "keine ERROR-Meldung gesendet"
+    text = str(errors[-1].payload)
+    assert "7" in text
+    assert "kaputt" in text
+
+
 def test_module_control_action_sets_attribute() -> None:
     """control_action setzt Attribute auf der Aktion."""
     from unittest.mock import MagicMock
